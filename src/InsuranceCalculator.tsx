@@ -1,135 +1,107 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
+
 export default function InsuranceCalculator() {
-  const [vehicleValue, setVehicleValue] = useState<number>(75000);
-  const [radius, setRadius] = useState<string>('regional');
-  const [experience, setExperience] = useState<string>('2-5');
-  const [coverages, setCoverages] = useState({
-    liability: true,
-    physicalDamage: true,
-    cargo: false,
-  });
+  const [vehicleValue, setVehicleValue] = useState<number>(55000);
+  const [drivingRadius, setDrivingRadius] = useState<string>('Regional (50–500 miles)');
+  const [experience, setExperience] = useState<string>('2-5 Years');
+  const [hasLiability, setHasLiability] = useState<boolean>(true);
+  const [hasPhysicalDamage, setHasPhysicalDamage] = useState<boolean>(true);
+  const [hasCargo, setHasCargo] = useState<boolean>(false);
 
-  // Simple estimation calculation logic
-  const calculatePremium = () => {
-    let base = vehicleValue * 0.015; // 1.5% base of vehicle value annually
-    if (radius === 'otr') base *= 1.3;
-    if (radius === 'local') base *= 0.8;
-
-    if (experience === '0-1') base *= 1.4;
-    if (experience === '5+') base *= 0.85;
-
-    let multiplier = 0;
-    if (coverages.liability) multiplier += 1.0;
-    if (coverages.physicalDamage) multiplier += 0.6;
-    if (coverages.cargo) multiplier += 0.3;
-
-    const annualTotal = base * multiplier;
-    const monthlyTotal = annualTotal / 12;
-
-    return {
-      monthly: Math.round(monthlyTotal),
-      annual: Math.round(annualTotal),
-    };
-  };
-
-  const estimate = calculatePremium();
+  // Simple premium estimation logic
+  let baseRate = vehicleValue * 0.02; 
+  if (drivingRadius.includes('Long Haul')) baseRate *= 1.4;
+  if (experience.includes('0–1 Year')) baseRate *= 1.3;
+  
+  let coverageMultiplier = (hasLiability ? 1 : 0) + (hasPhysicalDamage ? 0.8 : 0) + (hasCargo ? 0.5 : 0);
+  const annualEstimate = Math.round(baseRate * Math.max(coverageMultiplier, 0.5));
+  const monthlyEstimate = Math.round(annualEstimate / 12);
 
   return (
-    <div className="max-w-2xl mx-auto bg-white p-6 rounded-lg shadow-md border border-gray-200 my-8">
-      <h3 className="text-xl font-bold text-gray-900 mb-2">Carrier Insurance Calculator</h3>
-      <p className="text-sm text-gray-600 mb-6">
-        Estimate your commercial insurance premiums based on vehicle specs and coverage options.
-      </p>
+    <div style={{ background: '#ffffff', color: '#1e293b', padding: '24px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', maxWidth: '500px', width: '100%', boxSizing: 'border-box' }}>
+      
+      <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+        <h3 style={{ fontSize: '1.25rem', fontWeight: '700', margin: '0 0 6px 0', color: '#0f172a' }}>Carrier Insurance Calculator</h3>
+        <p style={{ color: '#64748b', fontSize: '0.813rem', margin: 0 }}>Estimate your commercial insurance premiums based on vehicle specs and coverage options.</p>
+      </div>
 
-      <div className="space-y-4">
+      {/* Vehicle Value Slider */}
+      <div style={{ marginBottom: '20px' }}>
+        <label style={{ display: 'block', fontSize: '0.813rem', fontWeight: '600', marginBottom: '8px', color: '#334155' }}>
+          Vehicle & Trailer Value ($): <span style={{ color: '#2563eb' }}>${vehicleValue.toLocaleString()}</span>
+        </label>
+        <input 
+          type="range" 
+          min="10000" 
+          max="250000" 
+          step="5000"
+          value={vehicleValue} 
+          onChange={(e) => setVehicleValue(Number(e.target.value))}
+          style={{ width: '100%', accentColor: '#2563eb', cursor: 'pointer' }}
+        />
+      </div>
+
+      {/* Dropdown Options Row */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Vehicle & Trailer Value ($): {vehicleValue.toLocaleString()}
+          <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '600', color: '#475569', marginBottom: '6px' }}>Driving Radius</label>
+          <select 
+            value={drivingRadius} 
+            onChange={(e) => setDrivingRadius(e.target.value)}
+            style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#0f172a', fontSize: '0.813rem', outline: 'none' }}
+          >
+            <option value="Local (0–50 miles)">Local (0–50 miles)</option>
+            <option value="Regional (50–500 miles)">Regional (50–500 miles)</option>
+            <option value="Long Haul (500+ miles)">Long Haul (500+ miles / Nationwide)</option>
+          </select>
+        </div>
+
+        <div>
+          <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '600', color: '#475569', marginBottom: '6px' }}>Commercial Experience</label>
+          <select 
+            value={experience} 
+            onChange={(e) => setExperience(e.target.value)}
+            style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#0f172a', fontSize: '0.813rem', outline: 'none' }}
+          >
+            <option value="New Venture (0–1 Year)">New Venture (0–1 Year)</option>
+            <option value="1-3 Years">1–3 Years</option>
+            <option value="2-5 Years">2–5 Years</option>
+            <option value="5+ Years">5+ Years</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Coverage Type Checkboxes */}
+      <div style={{ marginBottom: '20px' }}>
+        <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '600', color: '#475569', marginBottom: '8px' }}>Coverage Types</label>
+        <div style={{ display: 'flex', gap: '16px', fontSize: '0.813rem', color: '#334155' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+            <input type="checkbox" checked={hasLiability} onChange={(e) => setHasLiability(e.target.checked)} /> Liability
           </label>
-          <input
-            type="range"
-            min="20000"
-            max="200000"
-            step="5000"
-            value={vehicleValue}
-            onChange={(e) => setVehicleValue(Number(e.target.value))}
-            className="w-full"
-          />
+          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+            <input type="checkbox" checked={hasPhysicalDamage} onChange={(e) => setHasPhysicalDamage(e.target.checked)} /> Physical Damage
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+            <input type="checkbox" checked={hasCargo} onChange={(e) => setHasCargo(e.target.checked)} /> Cargo
+          </label>
         </div>
+      </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {/* Output Results Box */}
+      <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '16px', textAlign: 'center' }}>
+        <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: '700', color: '#64748b', letterSpacing: '0.05em' }}>Estimated Premium Breakdown</span>
+        <div style={{ display: 'flex', justifyContent: 'space-around', marginTop: '12px' }}>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Driving Radius</label>
-            <select
-              value={radius}
-              onChange={(e) => setRadius(e.target.value)}
-              className="w-full border border-gray-300 rounded-md p-2 text-sm"
-            >
-              <option value="local">Local (&lt; 50 miles)</option>
-              <option value="regional">Regional (50–500 miles)</option>
-              <option value="otr">OTR / Long-Haul (&gt; 500 miles)</option>
-            </select>
+            <span style={{ display: 'block', fontSize: '0.75rem', color: '#64748b' }}>Estimated Monthly</span>
+            <strong style={{ fontSize: '1.25rem', color: '#2563eb' }}>${monthlyEstimate} /mo</strong>
           </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Commercial Experience</label>
-            <select
-              value={experience}
-              onChange={(e) => setExperience(e.target.value)}
-              className="w-full border border-gray-300 rounded-md p-2 text-sm"
-            >
-              <option value="0-1">0–1 Years</option>
-              <option value="2-5">2–5 Years</option>
-              <option value="5+">5+ Years</option>
-            </select>
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Coverage Types</label>
-          <div className="flex flex-wrap gap-4">
-            <label className="flex items-center space-x-2 text-sm">
-              <input
-                type="checkbox"
-                checked={coverages.liability}
-                onChange={(e) => setCoverages({ ...coverages, liability: e.target.checked })}
-              />
-              <span>Liability</span>
-            </label>
-            <label className="flex items-center space-x-2 text-sm">
-              <input
-                type="checkbox"
-                checked={coverages.physicalDamage}
-                onChange={(e) => setCoverages({ ...coverages, physicalDamage: e.target.checked })}
-              />
-              <span>Physical Damage</span>
-            </label>
-            <label className="flex items-center space-x-2 text-sm">
-              <input
-                type="checkbox"
-                checked={coverages.cargo}
-                onChange={(e) => setCoverages({ ...coverages, cargo: e.target.checked })}
-              />
-              <span>Cargo</span>
-            </label>
-          </div>
-        </div>
-
-        {/* Output Summary Card */}
-        <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-4 mt-6">
-          <h4 className="text-sm font-semibold text-indigo-900 uppercase tracking-wide">Estimated Premium Breakdown</h4>
-          <div className="grid grid-cols-2 gap-4 mt-3">
-            <div>
-              <p className="text-xs text-gray-500">Estimated Monthly</p>
-              <p className="text-2xl font-bold text-indigo-600">${estimate.monthly.toLocaleString()} /mo</p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500">Estimated Annual</p>
-              <p className="text-2xl font-bold text-indigo-600">${estimate.annual.toLocaleString()} /yr</p>
-            </div>
+          <div style={{ borderLeft: '1px solid #cbd5e1', paddingLeft: '20px' }}>
+            <span style={{ display: 'block', fontSize: '0.75rem', color: '#64748b' }}>Estimated Annual</span>
+            <strong style={{ fontSize: '1.25rem', color: '#2563eb' }}>${annualEstimate.toLocaleString()} /yr</strong>
           </div>
         </div>
       </div>
+
     </div>
   );
 }

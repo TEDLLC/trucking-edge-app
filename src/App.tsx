@@ -1,6 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 
+import LoginPage from './LoginPage';
+import McSearchWidget from './McSearchWidget';
+import InsuranceCalculator from './InsuranceCalculator';
+import IftaAndDocuments from './IftaAndDocuments';
+import EldComparison from './EldComparison';
+
 // --- LEAFLET TYPING OVERRIDE ---
 declare global {
   interface Window {
@@ -136,12 +142,12 @@ const DEFAULT_CUSTOMERS: CustomerClient[] = [
   { id: 'CUST-502', companyName: 'Lone Star Freight Inc', contactName: 'Jessica Taylor', mcNumber: 'MC-992104', phone: '(555) 789-1234', email: 'jessica@lonestarfreight.net', dispatchFeePercent: 7, needsMcLease: true, mcLeaseFeePercent: 20, status: 'Active', created_at: '2026-07-01' },
 ];
 
-function App() {
+export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [loginEmail, setLoginEmail] = useState<string>('');
   const [loginPassword, setLoginPassword] = useState<string>('');
 
-  const [activeTab, setActiveTab] = useState<'loads' | 'drivers' | 'eld' | 'fuel' | 'financials' | 'tax' | 'users' | 'customers'>('customers');
+  const [activeTab, setActiveTab] = useState<'portal' | 'loads' | 'drivers' | 'eld' | 'fuel' | 'financials' | 'tax' | 'users' | 'customers'>('portal');
 
   const [loads, setLoads] = useState<Load[]>(() => JSON.parse(localStorage.getItem('ted_loads') || 'null') || DEFAULT_LOADS);
   const [drivers, setDrivers] = useState<Driver[]>(() => JSON.parse(localStorage.getItem('ted_drivers') || 'null') || DEFAULT_DRIVERS);
@@ -526,6 +532,9 @@ function App() {
             <span style={{ fontSize: '0.75rem', color: '#94a3b8', letterSpacing: '2px' }}>DISPATCHERS</span>
           </div>
           <nav className="nav-menu">
+            <button className={`nav-item ${activeTab === 'portal' ? 'active' : ''}`} onClick={() => setActiveTab('portal')}>
+              🚀 Portal Hub & Tools
+            </button>
             <button className={`nav-item ${activeTab === 'customers' ? 'active' : ''}`} onClick={() => setActiveTab('customers')}>
               🤝 Customer & MC Lease
             </button>
@@ -562,6 +571,7 @@ function App() {
         <main className="main-content" style={{ overflowY: 'auto' }}>
           <header className="header">
             <h1>
+              {activeTab === 'portal' && 'Carrier Portal & Tools Hub'}
               {activeTab === 'customers' && 'Carrier Onboarding & MC Lease Program'}
               {activeTab === 'loads' && 'Trucking Edge Dispatch & RPM Center'}
               {activeTab === 'drivers' && 'Fleet Driver Roster & HOS Tracking'}
@@ -595,7 +605,35 @@ function App() {
             </div>
           </div>
 
-          {/* TAB 0: CUSTOMER ONBOARDING & MC LEASE */}
+          {/* TAB 0: PORTAL HUB (USER SUB-COMPONENTS INTEGRATION) */}
+          {activeTab === 'portal' && (
+            <div className="bg-gray-50 min-h-screen pb-12" style={{ padding: '20px', borderRadius: '8px' }}>
+              {/* 1. Guest Interface & Login Page */}
+              <LoginPage />
+
+              {/* 2. Official SAFER / MC Search Tool */}
+              <div style={{ marginTop: '30px' }}>
+                <McSearchWidget />
+              </div>
+
+              {/* 3. Carrier Insurance Calculator */}
+              <div style={{ marginTop: '30px' }}>
+                <InsuranceCalculator />
+              </div>
+
+              {/* 4. IFTA Tax Calculator & Document Center */}
+              <div style={{ marginTop: '30px' }}>
+                <IftaAndDocuments />
+              </div>
+
+              {/* 5. ELD Price Comparison Matrix */}
+              <div style={{ marginTop: '30px' }}>
+                <EldComparison />
+              </div>
+            </div>
+          )}
+
+          {/* TAB 1: CUSTOMER ONBOARDING & MC LEASE */}
           {activeTab === 'customers' && (
             <div className="content-grid">
               <div className="card table-card" style={{ display: 'flex', flexDirection: 'column' }}>
@@ -672,88 +710,48 @@ function App() {
                   </div>
                   <div className="form-group">
                     <label>Email Address</label>
-                    <input type="email" placeholder="carrier@company.com" value={newCustEmail} onChange={(e) => setNewCustEmail(e.target.value)} required />
+                    <input type="email" placeholder="dispatcher@carrier.com" value={newCustEmail} onChange={(e) => setNewCustEmail(e.target.value)} required />
                   </div>
                   <div className="form-group">
                     <label>Dispatch Fee Percentage (%)</label>
-                    <select value={newCustFee} onChange={(e) => setNewCustFee(e.target.value)} className="status-select" required>
-                      <option value="5">5% (Volume Rate)</option>
-                      <option value="6">6%</option>
-                      <option value="7">7% (Standard Dispatch)</option>
-                      <option value="8">8%</option>
-                      <option value="10">10% (Full Service)</option>
-                    </select>
+                    <input type="number" step="0.5" value={newCustFee} onChange={(e) => setNewCustFee(e.target.value)} required />
                   </div>
-
-                  {/* MC Lease Toggle Section (17% - 25%) */}
-                  <div style={{ background: '#0f172a', padding: '14px', borderRadius: '6px', border: '1px solid #334155', marginBottom: '15px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: needsMcLease ? '10px' : '0' }}>
-                      <input 
-                        type="checkbox" 
-                        id="mcLeaseToggle" 
-                        checked={needsMcLease} 
-                        onChange={(e) => setNeedsMcLease(e.target.checked)} 
-                        style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                      />
-                      <label htmlFor="mcLeaseToggle" style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#f59e0b', cursor: 'pointer' }}>
-                        Carrier needs MC Lease-On Program (Run under our MC authority)
-                      </label>
+                  <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px' }}>
+                    <input type="checkbox" id="mcLeaseCheck" checked={needsMcLease} onChange={(e) => setNeedsMcLease(e.target.checked)} style={{ width: '18px', height: '18px' }} />
+                    <label htmlFor="mcLeaseCheck" style={{ margin: 0, cursor: 'pointer' }}>Needs MC Lease Program (Covers Insurance & ELD)</label>
+                  </div>
+                  {needsMcLease && (
+                    <div className="form-group" style={{ marginTop: '10px' }}>
+                      <label>MC Lease Fee Percentage (%) [Default: 20%]</label>
+                      <input type="number" step="0.5" value={mcLeaseFee} onChange={(e) => setMcLeaseFee(e.target.value)} />
                     </div>
-
-                    {needsMcLease && (
-                      <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed #334155' }}>
-                        <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.85rem' }}>MC Lease Fee Percentage (%) [Covers Insurance & ELD]</label>
-                        <select value={mcLeaseFee} onChange={(e) => setMcLeaseFee(e.target.value)} className="status-select">
-                          <option value="17">17% (Basic Lease)</option>
-                          <option value="18">18%</option>
-                          <option value="20">20% (Standard Lease)</option>
-                          <option value="22">22%</option>
-                          <option value="25">25% (Full Comprehensive Authority)</option>
-                        </select>
-                        <small style={{ color: '#94a3b8', display: 'block', marginTop: '4px' }}>
-                          Includes primary liability, cargo insurance, and ELD provision.
-                        </small>
-                      </div>
-                    )}
+                  )}
+                  <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px' }}>
+                    <input type="checkbox" id="termsCheck" checked={agreedTerms} onChange={(e) => setAgreedTerms(e.target.checked)} style={{ width: '18px', height: '18px' }} required />
+                    <label htmlFor="termsCheck" style={{ margin: 0, cursor: 'pointer', fontSize: '0.8rem' }}>Carrier agrees to Limited Power of Attorney & Dispatch Agreement.</label>
                   </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>
-                    <input 
-                      type="checkbox" 
-                      id="termsCheck" 
-                      checked={agreedTerms} 
-                      onChange={(e) => setAgreedTerms(e.target.checked)} 
-                      style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                      required
-                    />
-                    <label htmlFor="termsCheck" style={{ fontSize: '0.85rem', cursor: 'pointer' }}>
-                      Carrier agrees to Dispatch & MC Lease percentage agreement terms.
-                    </label>
-                  </div>
-
-                  <button type="submit" className="btn-primary">Onboard Carrier & Setup Program</button>
+                  <button type="submit" className="btn" style={{ width: '100%', marginTop: '15px' }}>Complete Onboarding</button>
                 </form>
               </div>
             </div>
           )}
 
-          {/* TAB 1: DISPATCH & LOADS WITH SEARCH & FILTERS */}
+          {/* TAB 2: LOADS & DISPATCH */}
           {activeTab === 'loads' && (
             <div className="content-grid">
               <div className="card table-card" style={{ display: 'flex', flexDirection: 'column' }}>
-                <h2>Active Dispatches</h2>
-                
-                <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap', gap: '10px' }}>
                   <input 
-                    placeholder="🔍 Search loads by origin, destination, broker, driver..." 
+                    type="text" 
+                    placeholder="Search origin, destination, broker..." 
                     value={loadSearch} 
-                    onChange={(e) => setLoadSearch(e.target.value)} 
-                    style={{ flex: 2, padding: '8px', borderRadius: '4px', border: '1px solid #334155', background: '#0f172a', color: '#fff' }} 
+                    onChange={(e) => setLoadSearch(e.target.value)}
+                    style={{ padding: '8px 12px', borderRadius: '4px', border: '1px solid #334155', background: '#0f172a', color: '#fff', width: '240px' }}
                   />
                   <select 
                     value={statusFilter} 
-                    onChange={(e) => setStatusFilter(e.target.value)} 
-                    style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #334155', background: '#0f172a', color: '#fff' }}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    style={{ padding: '8px 12px', borderRadius: '4px', border: '1px solid #334155', background: '#0f172a', color: '#fff' }}
                   >
                     <option value="All">All Statuses</option>
                     <option value="Pending">Pending</option>
@@ -761,7 +759,6 @@ function App() {
                     <option value="Delivered">Delivered</option>
                   </select>
                 </div>
-
                 <div style={{ overflowX: 'auto' }}>
                   <table>
                     <thead>
@@ -769,400 +766,402 @@ function App() {
                         <th>Load ID</th>
                         <th>Broker</th>
                         <th>Route</th>
-                        <th>Miles</th>
-                        <th>Gross Rate</th>
-                        <th>RPM</th>
-                        <th>Driver</th>
+                        <th>Assigned Driver</th>
+                        <th>Rate / RPM</th>
                         <th>Status</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredLoads.map(l => {
-                        const rpm = l.miles > 0 ? (l.rate / l.miles).toFixed(2) : 'N/A';
+                      {filteredLoads.map(load => {
+                        const rpm = load.miles > 0 ? (load.rate / load.miles).toFixed(2) : '0.00';
                         return (
-                          <tr key={l.id}>
-                            <td><strong>{l.id}</strong></td>
-                            <td>{l.brokerName || 'Broker'}</td>
-                            <td>{l.origin} ➔ {l.destination}</td>
-                            <td>{l.miles} mi</td>
-                            <td>${l.rate.toLocaleString()}</td>
-                            <td><strong style={{ color: '#f59e0b' }}>${rpm}/mi</strong></td>
-                            <td>{l.driver}</td>
+                          <tr key={load.id}>
+                            <td><strong>{load.id}</strong><br/><small style={{color: '#94a3b8'}}>{load.date}</small></td>
+                            <td>{load.brokerName}</td>
+                            <td>{load.origin} &rarr; {load.destination}<br/><small style={{color: '#94a3b8'}}>{load.miles} mi</small></td>
+                            <td>{load.driver}</td>
+                            <td><strong style={{color: '#22c55e'}}>${load.rate}</strong><br/><small style={{color: '#94a3b8'}}>${rpm}/mi</small></td>
                             <td>
-                              <select 
-                                value={l.status} 
-                                onChange={(e) => setLoads(loads.map(item => item.id === l.id ? { ...item, status: e.target.value as any } : item))}
-                                className="status-select"
-                              >
-                                <option value="Pending">Pending</option>
-                                <option value="In Transit">In Transit</option>
-                                <option value="Delivered">Delivered</option>
-                              </select>
+                              <span style={{ 
+                                padding: '4px 8px', 
+                                borderRadius: '4px', 
+                                fontSize: '0.75rem', 
+                                fontWeight: 'bold',
+                                background: load.status === 'Delivered' ? '#166534' : load.status === 'In Transit' ? '#1e40af' : '#854d0e',
+                                color: '#fff'
+                              }}>
+                                {load.status}
+                              </span>
                             </td>
                           </tr>
                         );
                       })}
-                      {filteredLoads.length === 0 && (
-                        <tr>
-                          <td colSpan={8} style={{ textAlign: 'center', padding: '20px', color: '#94a3b8' }}>No loads match your search criteria.</td>
-                        </tr>
-                      )}
                     </tbody>
                   </table>
                 </div>
               </div>
 
               <div className="card form-card">
-                <h2>Book New Freight</h2>
+                <h2>➕ Book & Dispatch New Load</h2>
                 <form onSubmit={handleAddLoad}>
                   <div className="form-group">
+                    <label>Origin (City, ST)</label>
+                    <input type="text" value={origin} onChange={(e) => setOrigin(e.target.value)} placeholder="Chicago, IL" required />
+                  </div>
+                  <div className="form-group">
+                    <label>Destination (City, ST)</label>
+                    <input type="text" value={destination} onChange={(e) => setDestination(e.target.value)} placeholder="Dallas, TX" required />
+                  </div>
+                  <div className="form-group">
                     <label>Broker / Shipper Name</label>
-                    <input type="text" placeholder="e.g. TQL Logistics" value={brokerName} onChange={(e) => setBrokerName(e.target.value)} />
+                    <input type="text" value={brokerName} onChange={(e) => setBrokerName(e.target.value)} placeholder="TQL Logistics" />
                   </div>
                   <div className="form-group">
-                    <label>Pickup Location</label>
-                    <input type="text" placeholder="e.g. Chicago, IL" value={origin} onChange={(e) => setOrigin(e.target.value)} required />
-                  </div>
-                  <div className="form-group">
-                    <label>Delivery Location</label>
-                    <input type="text" placeholder="e.g. Dallas, TX" value={destination} onChange={(e) => setDestination(e.target.value)} required />
-                  </div>
-                  <div className="form-group">
-                    <label>Total Miles</label>
-                    <input type="number" placeholder="e.g. 925" value={miles} onChange={(e) => setMiles(e.target.value)} required />
-                  </div>
-                  <div className="form-group">
-                    <label>Gross Rate ($)</label>
-                    <input type="number" placeholder="e.g. 2500" value={rate} onChange={(e) => setRate(e.target.value)} required />
-                  </div>
-
-                  {parseFloat(miles) > 0 && parseFloat(rate) > 0 && (
-                    <div style={{ padding: '12px', background: '#0f172a', border: '1px solid #334155', borderRadius: '6px', marginBottom: '14px', textAlign: 'center' }}>
-                      Calculated RPM: <strong style={{ color: '#f59e0b' }}>${(parseFloat(rate) / parseFloat(miles)).toFixed(2)} / mi</strong>
-                    </div>
-                  )}
-
-                  <div className="form-group">
-                    <label>Assign Driver</label>
-                    <select value={driver} onChange={(e) => setDriver(e.target.value)} className="status-select">
+                    <label>Assigned Driver</label>
+                    <select value={driver} onChange={(e) => setDriver(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #334155', background: '#0f172a', color: '#fff' }}>
                       <option value="">Unassigned</option>
                       {drivers.map(d => <option key={d.id} value={d.name}>{d.name} ({d.truck})</option>)}
                     </select>
                   </div>
-                  <button type="submit" className="btn-primary">Dispatch Freight</button>
+                  <div className="form-group">
+                    <label>Gross Load Rate ($)</label>
+                    <input type="number" value={rate} onChange={(e) => setRate(e.target.value)} placeholder="2500" required />
+                  </div>
+                  <div className="form-group">
+                    <label>Total Miles</label>
+                    <input type="number" value={miles} onChange={(e) => setMiles(e.target.value)} placeholder="950" required />
+                  </div>
+                  <button type="submit" className="btn" style={{ width: '100%', marginTop: '10px' }}>Dispatch Load & Generate Invoice</button>
                 </form>
               </div>
             </div>
           )}
 
-          {/* TAB 2: DRIVERS & HOS TRACKER */}
+          {/* TAB 3: DRIVERS & HOS */}
           {activeTab === 'drivers' && (
             <div className="content-grid">
-              <div className="card table-card">
-                <h2>Driver Roster & HOS Hours Tracker</h2>
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Driver</th>
-                      <th>Phone / Truck</th>
-                      <th>Pay Rate</th>
-                      <th>Status</th>
-                      <th>Live HOS Tracking (Motive/Samsara synced)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {drivers.map(d => (
-                      <tr key={d.id}>
-                        <td><strong>{d.name}</strong></td>
-                        <td>{d.phone} | {d.truck}</td>
-                        <td>${d.payPerMile.toFixed(2)}/mi</td>
-                        <td><strong>{d.status}</strong></td>
-                        <td>
-                          <div style={{ fontSize: '12px', background: '#0f172a', padding: '6px 10px', borderRadius: '4px', border: '1px solid #334155', display: 'flex', gap: '15px' }}>
-                            <span>🚗 <strong>Drive Left:</strong> {d.drivingHoursLeft ?? 11} hrs</span>
-                            <span>⏰ <strong>Shift Left:</strong> {d.shiftHoursLeft ?? 14} hrs</span>
-                            <span>📅 <strong>70-Hr Cycle:</strong> {d.cycleHoursLeft ?? 70} hrs</span>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="card form-card">
-                <h2>Register New Driver</h2>
-                <form onSubmit={handleAddDriver}>
-                  <div className="form-group">
-                    <label>Full Name</label>
-                    <input type="text" placeholder="e.g. Alex Rivera" value={driverName} onChange={(e) => setDriverName(e.target.value)} required />
-                  </div>
-                  <div className="form-group">
-                    <label>Phone Number</label>
-                    <input type="text" placeholder="(555) 019-2831" value={driverPhone} onChange={(e) => setDriverPhone(e.target.value)} />
-                  </div>
-                  <div className="form-group">
-                    <label>Truck Assignment</label>
-                    <input type="text" placeholder="Truck #301" value={driverTruck} onChange={(e) => setDriverTruck(e.target.value)} />
-                  </div>
-                  <button type="submit" className="btn-primary">Add Driver</button>
-                </form>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 3: ELD TELEMETRY */}
-          {activeTab === 'eld' && (
-            <div className="card table-card">
-              <h2>📟 Live ELD Hours of Service Telemetry</h2>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Driver</th>
-                    <th>Current Duty Status</th>
-                    <th>Drive Remaining (11h)</th>
-                    <th>Duty Remaining (14h)</th>
-                    <th>70-Hr Cycle</th>
-                    <th>Status Override</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {eldRecords.map(rec => (
-                    <tr key={rec.driverId}>
-                      <td><strong>{rec.driverName}</strong></td>
-                      <td>
-                        <span style={{
-                          padding: '4px 10px',
-                          borderRadius: '4px',
-                          fontWeight: 'bold',
-                          background: rec.status === 'Driving' ? '#166534' : rec.status === 'On Duty' ? '#854d0e' : '#334155',
-                          color: '#fff'
-                        }}>
-                          {rec.status}
-                        </span>
-                      </td>
-                      <td><strong>{rec.driveTimeRemaining} hrs</strong></td>
-                      <td>{rec.dutyTimeRemaining} hrs</td>
-                      <td>{rec.cycleRemaining} hrs</td>
-                      <td>
-                        <select 
-                          value={rec.status}
-                          onChange={(e) => handleUpdateELD(rec.driverId, e.target.value as any)}
-                          style={{ padding: '6px', background: '#0f172a', color: '#fff', border: '1px solid #334155', borderRadius: '4px' }}
-                        >
-                          <option value="Driving">Driving</option>
-                          <option value="On Duty">On Duty</option>
-                          <option value="Sleeper">Sleeper</option>
-                          <option value="Off Duty">Off Duty</option>
-                        </select>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {/* TAB 4: FUEL NETWORK & MAP */}
-          {activeTab === 'fuel' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div className="card" style={{ padding: '20px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap', gap: '10px' }}>
-                  <div>
-                    <h2 style={{ margin: 0 }}>📍 Nearby Fuel Network & GPS Locator</h2>
-                    <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: '4px 0 0 0' }}>Current Center: {locationName}</p>
-                  </div>
-                  <button onClick={handleFindGPSLocation} style={{ background: '#3b82f6', color: '#fff', border: 'none', padding: '10px 16px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>
-                    🛰️ Use My GPS Position
-                  </button>
-                </div>
-                <div id="fuel-map-container" style={{ width: '100%', height: '350px', borderRadius: '8px', border: '1px solid #334155', background: '#1e293b' }}></div>
-              </div>
-
-              <div className="content-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
-                <div className="card table-card">
-                  <h2>Fuel Purchase History</h2>
+              <div className="card table-card" style={{ display: 'flex', flexDirection: 'column' }}>
+                <h2>Fleet Driver Roster & HOS Hours</h2>
+                <div style={{ overflowX: 'auto', marginTop: '10px' }}>
                   <table>
                     <thead>
                       <tr>
-                        <th>Driver</th>
-                        <th>Truck</th>
-                        <th>Gallons</th>
-                        <th>Cost</th>
-                        <th>Location</th>
+                        <th>Driver Name</th>
+                        <th>Phone</th>
+                        <th>Truck Assigned</th>
+                        <th>Pay Rate</th>
+                        <th>Status</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {fuelEntries.map(f => (
-                        <tr key={f.id}>
-                          <td><strong>{f.driverName}</strong></td>
-                          <td>{f.truck}</td>
-                          <td>{f.gallons} gal</td>
-                          <td>${f.cost.toFixed(2)}</td>
-                          <td>{f.location}</td>
+                      {drivers.map(drv => (
+                        <tr key={drv.id}>
+                          <td><strong>{drv.name}</strong></td>
+                          <td>{drv.phone}</td>
+                          <td>{drv.truck}</td>
+                          <td>${drv.payPerMile.toFixed(2)}/mi</td>
+                          <td>
+                            <span style={{ padding: '4px 8px', borderRadius: '4px', background: '#3b82f6', color: '#fff', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                              {drv.status}
+                            </span>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
-
-                <div className="card form-card">
-                  <h2>Log Fuel Purchase</h2>
-                  <form onSubmit={handleAddFuel}>
-                    <div className="form-group">
-                      <label>Driver</label>
-                      <select value={fuelDriver} onChange={(e) => setFuelDriver(e.target.value)} className="status-select" required>
-                        <option value="">Select Driver</option>
-                        {drivers.map(d => <option key={d.id} value={d.name}>{d.name} ({d.truck})</option>)}
-                      </select>
-                    </div>
-                    <div className="form-group">
-                      <label>Gallons</label>
-                      <input type="number" step="0.1" placeholder="120" value={gallons} onChange={(e) => setGallons(e.target.value)} required />
-                    </div>
-                    <div className="form-group">
-                      <label>Total Cost ($)</label>
-                      <input type="number" step="0.01" placeholder="450.00" value={fuelCost} onChange={(e) => setFuelCost(e.target.value)} required />
-                    </div>
-                    <div className="form-group">
-                      <label>Location / Truck Stop</label>
-                      <input type="text" placeholder="Love's #310 - St. Louis, MO" value={fuelLocation} onChange={(e) => setFuelLocation(e.target.value)} required />
-                    </div>
-                    <button type="submit" className="btn-primary">Record Fuel</button>
-                  </form>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 5: FINANCIALS & PDF INVOICES */}
-          {activeTab === 'financials' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
-                <div className="stat-card">
-                  <span className="label">Total Revenue</span>
-                  <div className="value" style={{ color: '#f59e0b' }}>${totalGrossRevenue.toLocaleString()}</div>
-                </div>
-                <div className="stat-card">
-                  <span className="label">Total Fleet Expenses</span>
-                  <div className="value" style={{ color: '#ef4444' }}>${totalExpenses.toLocaleString()}</div>
-                </div>
-                <div className="stat-card">
-                  <span className="label">Net Operating Profit</span>
-                  <div className="value" style={{ color: netProfit >= 0 ? '#22c55e' : '#ef4444' }}>${netProfit.toLocaleString()}</div>
-                </div>
-              </div>
-
-              <div className="card table-card">
-                <h2>🖨️ Dispatch Invoices & Printable PDFs</h2>
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Invoice ID</th>
-                      <th>Carrier / Broker</th>
-                      <th>Load Ref</th>
-                      <th>Gross Rate</th>
-                      <th>Dispatch Fee</th>
-                      <th>Status</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {invoices.map(inv => (
-                      <tr key={inv.id}>
-                        <td><strong>{inv.id}</strong></td>
-                        <td>{inv.carrierName}</td>
-                        <td>{inv.loadReference}</td>
-                        <td>${inv.loadRate.toLocaleString()}</td>
-                        <td><strong style={{ color: '#22c55e' }}>${inv.invoiceAmount.toFixed(2)}</strong></td>
-                        <td>
-                          <select 
-                            value={inv.status} 
-                            onChange={(e) => setInvoices(invoices.map(i => i.id === inv.id ? { ...i, status: e.target.value as any } : i))}
-                            style={{ padding: '4px', background: '#0f172a', color: '#fff', border: '1px solid #334155', borderRadius: '4px' }}
-                          >
-                            <option value="Unpaid">Unpaid</option>
-                            <option value="Paid">Paid</option>
-                          </select>
-                        </td>
-                        <td>
-                          <button onClick={() => downloadInvoicePDF(inv)} style={{ fontSize: '12px', padding: '6px 12px', background: '#3b82f6', color: '#fff', border: 'none', cursor: 'pointer', borderRadius: '4px', fontWeight: 'bold' }}>
-                            🖨️ Print / Download PDF
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 6: ADMIN TAX & IFTA */}
-          {activeTab === 'tax' && (
-            <div className="card table-card">
-              <h2>🏛️ Administrator Tax & IFTA Center</h2>
-              <p style={{ color: '#94a3b8', marginBottom: '20px' }}>Automated quarterly IFTA fuel tax estimates and federal tax projections based on real fleet telematics.</p>
-              
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                <div style={{ background: '#0f172a', padding: '20px', borderRadius: '8px', border: '1px solid #334155' }}>
-                  <h3 style={{ color: '#f59e0b', marginTop: 0 }}>Quarterly IFTA Fuel Tax Estimate</h3>
-                  <p>Total Miles Driven: <strong>{totalMilesDriven.toLocaleString()} mi</strong></p>
-                  <p>Total Gallons Purchased: <strong>{totalGallonsPurchased.toLocaleString()} gal</strong></p>
-                  <p>Fleet Average MPG: <strong>{fleetMpg} MPG</strong></p>
-                  <hr style={{ borderColor: '#334155' }}/>
-                  <p style={{ fontSize: '1.1rem' }}>Estimated IFTA Net Due: <strong style={{ color: '#22c55e' }}>${Math.abs((totalMilesDriven / parseFloat(fleetMpg) * parseFloat(iftaAvgTaxPerGallon)) - (totalGallonsPurchased * parseFloat(iftaAvgTaxPerGallon))).toFixed(2)}</strong></p>
-                </div>
-
-                <div style={{ background: '#0f172a', padding: '20px', borderRadius: '8px', border: '1px solid #334155' }}>
-                  <h3 style={{ color: '#3b82f6', marginTop: 0 }}>Annual Tax Liability Projections</h3>
-                  <p>Net Operating Profit: <strong>${netProfit.toLocaleString()}</strong></p>
-                  <p>Estimated Income Tax ({estimatedTaxRate}%): <strong>${(netProfit > 0 ? netProfit * (parseFloat(estimatedTaxRate) / 100) : 0).toFixed(2)}</strong></p>
-                  <p>Self-Employment Tax ({selfEmploymentTaxRate}%): <strong>${(netProfit > 0 ? netProfit * (parseFloat(selfEmploymentTaxRate) / 100) : 0).toFixed(2)}</strong></p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 7: USERS & ROLES */}
-          {activeTab === 'users' && (
-            <div className="content-grid">
-              <div className="card table-card">
-                <h2>Fleet Access Roles</h2>
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Name</th>
-                      <th>Email</th>
-                      <th>Role</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {users.map(u => (
-                      <tr key={u.id}>
-                        <td><strong>{u.name}</strong></td>
-                        <td>{u.email}</td>
-                        <td>{u.role}</td>
-                        <td><strong>{u.status}</strong></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
               </div>
 
               <div className="card form-card">
-                <h2>Add System User</h2>
+                <h2>👨‍✈️ Add New Driver</h2>
+                <form onSubmit={handleAddDriver}>
+                  <div className="form-group">
+                    <label>Driver Full Name</label>
+                    <input type="text" value={driverName} onChange={(e) => setDriverName(e.target.value)} placeholder="Michael Scott" required />
+                  </div>
+                  <div className="form-group">
+                    <label>Phone Number</label>
+                    <input type="text" value={driverPhone} onChange={(e) => setDriverPhone(e.target.value)} placeholder="(555) 123-4567" required />
+                  </div>
+                  <div className="form-group">
+                    <label>Assigned Truck Unit</label>
+                    <input type="text" value={driverTruck} onChange={(e) => setDriverTruck(e.target.value)} placeholder="Truck #410" required />
+                  </div>
+                  <button type="submit" className="btn" style={{ width: '100%', marginTop: '10px' }}>Register Driver</button>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 4: ELD / HOS TELEMETRY */}
+          {activeTab === 'eld' && (
+            <div className="content-grid">
+              <div className="card table-card" style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column' }}>
+                <h2>📟 FMCSA ELD Compliance & HOS Status Monitor</h2>
+                <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '15px' }}>
+                  Real-time electronic logging device tracking for driving limits, shift hours, and 70-hour / 8-day cycle clocks.
+                </p>
+                <div style={{ overflowX: 'auto' }}>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Driver Name</th>
+                        <th>Current Duty Status</th>
+                        <th>Drive Time Left</th>
+                        <th>Shift Hours Left</th>
+                        <th>Cycle 70h Left</th>
+                        <th>Quick Status Override</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {eldRecords.map(rec => (
+                        <tr key={rec.driverId}>
+                          <td><strong>{rec.driverName}</strong></td>
+                          <td>
+                            <span style={{ 
+                              padding: '4px 8px', 
+                              borderRadius: '4px', 
+                              fontSize: '0.75rem', 
+                              fontWeight: 'bold',
+                              background: rec.status === 'Driving' ? '#166534' : rec.status === 'On Duty' ? '#1e40af' : '#64748b',
+                              color: '#fff'
+                            }}>
+                              {rec.status}
+                            </span>
+                          </td>
+                          <td>{rec.driveTimeRemaining} hrs</td>
+                          <td>{rec.dutyTimeRemaining} hrs</td>
+                          <td>{rec.cycleRemaining} hrs</td>
+                          <td>
+                            <div style={{ display: 'flex', gap: '5px' }}>
+                              <button onClick={() => handleUpdateELD(rec.driverId, 'Driving')} style={{ padding: '4px 8px', background: '#166534', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}>Drive</button>
+                              <button onClick={() => handleUpdateELD(rec.driverId, 'On Duty')} style={{ padding: '4px 8px', background: '#1e40af', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}>On Duty</button>
+                              <button onClick={() => handleUpdateELD(rec.driverId, 'Sleeper')} style={{ padding: '4px 8px', background: '#854d0e', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}>Sleeper</button>
+                              <button onClick={() => handleUpdateELD(rec.driverId, 'Off Duty')} style={{ padding: '4px 8px', background: '#475569', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}>Off Duty</button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 5: FUEL MAP & LOGS */}
+          {activeTab === 'fuel' && (
+            <div className="content-grid">
+              <div className="card table-card" style={{ display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <h2>⛽ GPS Station Locator & Fuel Prices</h2>
+                  <button onClick={handleFindGPSLocation} style={{ background: '#3b82f6', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.8rem' }}>
+                    📍 Use Current GPS Location
+                  </button>
+                </div>
+                <p style={{ color: '#94a3b8', fontSize: '0.8rem', marginBottom: '10px' }}>Current Region: {locationName}</p>
+                <div id="fuel-map-container" style={{ width: '100%', height: '320px', borderRadius: '6px', border: '1px solid #334155', marginBottom: '15px' }}></div>
+                
+                <h3>Recent Fuel Purchases</h3>
+                <div style={{ overflowX: 'auto', marginTop: '10px' }}>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th>Driver & Truck</th>
+                        <th>Location</th>
+                        <th>Gallons</th>
+                        <th>Total Cost</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {fuelEntries.map(f => (
+                        <tr key={f.id}>
+                          <td>{f.date}</td>
+                          <td>{f.driverName}<br/><small style={{color: '#94a3b8'}}>{f.truck}</small></td>
+                          <td>{f.location}</td>
+                          <td>{f.gallons} gal</td>
+                          <td><strong style={{color: '#f59e0b'}}>${f.cost}</strong></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="card form-card">
+                <h2>⛽ Log Fuel Purchase</h2>
+                <form onSubmit={handleAddFuel}>
+                  <div className="form-group">
+                    <label>Driver Name</label>
+                    <select value={fuelDriver} onChange={(e) => setFuelDriver(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #334155', background: '#0f172a', color: '#fff' }} required>
+                      <option value="">Select Driver</option>
+                      {drivers.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Gallons Purchased</label>
+                    <input type="number" step="0.1" value={gallons} onChange={(e) => setGallons(e.target.value)} placeholder="110" required />
+                  </div>
+                  <div className="form-group">
+                    <label>Total Cost ($)</label>
+                    <input type="number" step="0.01" value={fuelCost} onChange={(e) => setFuelCost(e.target.value)} placeholder="415.50" required />
+                  </div>
+                  <div className="form-group">
+                    <label>Station Name & Location</label>
+                    <input type="text" value={fuelLocation} onChange={(e) => setFuelLocation(e.target.value)} placeholder="Love's #310 - St. Louis, MO" required />
+                  </div>
+                  <button type="submit" className="btn" style={{ width: '100%', marginTop: '10px' }}>Log Fuel Entry</button>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 6: PROFIT & LOSS / INVOICES */}
+          {activeTab === 'financials' && (
+            <div className="content-grid">
+              <div className="card table-card" style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column' }}>
+                <h2>💰 Profit & Loss Statement & Dispatch Invoices</h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', margin: '15px 0' }}>
+                  <div style={{ background: '#1e293b', padding: '15px', borderRadius: '6px', border: '1px solid #334155' }}>
+                    <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Gross Revenue</span>
+                    <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#f59e0b' }}>${totalGrossRevenue.toLocaleString()}</div>
+                  </div>
+                  <div style={{ background: '#1e293b', padding: '15px', borderRadius: '6px', border: '1px solid #334155' }}>
+                    <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Fuel Expense</span>
+                    <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#ef4444' }}>-${totalFuelCost.toLocaleString()}</div>
+                  </div>
+                  <div style={{ background: '#1e293b', padding: '15px', borderRadius: '6px', border: '1px solid #334155' }}>
+                    <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Driver Pay Expense</span>
+                    <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#ef4444' }}>-${totalDriverPay.toLocaleString()}</div>
+                  </div>
+                  <div style={{ background: '#1e293b', padding: '15px', borderRadius: '6px', border: '1px solid #334155' }}>
+                    <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Net Operating Profit</span>
+                    <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: netProfit >= 0 ? '#22c55e' : '#ef4444' }}>${netProfit.toLocaleString()}</div>
+                  </div>
+                </div>
+
+                <h3 style={{ marginTop: '20px' }}>Dispatch Invoices</h3>
+                <div style={{ overflowX: 'auto', marginTop: '10px' }}>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Invoice ID</th>
+                        <th>Carrier / Broker</th>
+                        <th>Load Ref</th>
+                        <th>Gross Rate</th>
+                        <th>Fee Amount</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {invoices.map(inv => (
+                        <tr key={inv.id}>
+                          <td><strong>{inv.id}</strong><br/><small style={{color: '#94a3b8'}}>{inv.created_at}</small></td>
+                          <td>{inv.carrierName}</td>
+                          <td>{inv.loadReference}</td>
+                          <td>${Number(inv.loadRate).toLocaleString()}</td>
+                          <td><strong style={{color: '#22c55e'}}>${Number(inv.invoiceAmount).toFixed(2)}</strong> ({inv.feePercentage}%)</td>
+                          <td>
+                            <span style={{ padding: '4px 8px', borderRadius: '4px', background: inv.status === 'Paid' ? '#166534' : '#854d0e', color: '#fff', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                              {inv.status}
+                            </span>
+                          </td>
+                          <td>
+                            <button onClick={() => downloadInvoicePDF(inv)} style={{ background: '#3b82f6', color: '#fff', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}>
+                              Print / PDF
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 7: ADMIN TAX & IFTA */}
+          {activeTab === 'tax' && (
+            <div className="content-grid">
+              <div className="card table-card" style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column' }}>
+                <h2>🏛️ Administrator Tax & IFTA Calculator Center</h2>
+                <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '20px' }}>
+                  Calculate quarterly IFTA fuel tax obligations and estimated federal / self-employment tax reserves based on net operational profit.
+                </p>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+                  <div style={{ background: '#1e293b', padding: '20px', borderRadius: '8px', border: '1px solid #334155' }}>
+                    <h3 style={{ color: '#f59e0b', marginBottom: '15px' }}>Quarterly IFTA Tax Estimate</h3>
+                    <p style={{ fontSize: '0.9rem', marginBottom: '10px' }}>Total Gallons Purchased: <strong>{totalGallonsPurchased} gal</strong></p>
+                    <p style={{ fontSize: '0.9rem', marginBottom: '10px' }}>Estimated Fleet MPG: <strong>{fleetMpg} MPG</strong></p>
+                    <p style={{ fontSize: '0.9rem', marginBottom: '10px' }}>Total Calculated Miles: <strong>{totalMilesDriven} mi</strong></p>
+                    <hr style={{ borderColor: '#334155', margin: '15px 0' }}/>
+                    <p style={{ fontSize: '1rem' }}>Estimated Net Tax Due: <strong style={{ color: '#22c55e' }}>${(totalGallonsPurchased * parseFloat(iftaAvgTaxPerGallon)).toFixed(2)}</strong></p>
+                  </div>
+
+                  <div style={{ background: '#1e293b', padding: '20px', borderRadius: '8px', border: '1px solid #334155' }}>
+                    <h3 style={{ color: '#3b82f6', marginBottom: '15px' }}>Income & Self-Employment Tax Reserve</h3>
+                    <p style={{ fontSize: '0.9rem', marginBottom: '10px' }}>Net Operating Profit: <strong>${netProfit.toLocaleString()}</strong></p>
+                    <p style={{ fontSize: '0.9rem', marginBottom: '10px' }}>Est. Federal Income Tax ({estimatedTaxRate}%): <strong>${(netProfit * (parseFloat(estimatedTaxRate) / 100)).toFixed(2)}</strong></p>
+                    <p style={{ fontSize: '0.9rem', marginBottom: '10px' }}>Self-Employment Tax ({selfEmploymentTaxRate}%): <strong>${(netProfit * (parseFloat(selfEmploymentTaxRate) / 100)).toFixed(2)}</strong></p>
+                    <hr style={{ borderColor: '#334155', margin: '15px 0' }}/>
+                    <p style={{ fontSize: '1rem' }}>Total Recommended Tax Reserve: <strong style={{ color: '#f59e0b' }}>${(netProfit * ((parseFloat(estimatedTaxRate) + parseFloat(selfEmploymentTaxRate)) / 100)).toFixed(2)}</strong></p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 8: USERS & ACCESS ROLES */}
+          {activeTab === 'users' && (
+            <div className="content-grid">
+              <div className="card table-card" style={{ display: 'flex', flexDirection: 'column' }}>
+                <h2>👥 System Access Roles</h2>
+                <div style={{ overflowX: 'auto', marginTop: '10px' }}>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>User Name</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {users.map(u => (
+                        <tr key={u.id}>
+                          <td><strong>{u.name}</strong></td>
+                          <td>{u.email}</td>
+                          <td>
+                            <span style={{ padding: '4px 8px', borderRadius: '4px', background: '#3b82f6', color: '#fff', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                              {u.role}
+                            </span>
+                          </td>
+                          <td>
+                            <span style={{ padding: '4px 8px', borderRadius: '4px', background: '#166534', color: '#fff', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                              {u.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="card form-card">
+                <h2>👤 Add New System User</h2>
                 <form onSubmit={handleAddUser}>
                   <div className="form-group">
                     <label>Full Name</label>
-                    <input type="text" placeholder="Jane Doe" value={userName} onChange={(e) => setUserName(e.target.value)} required />
+                    <input type="text" value={userName} onChange={(e) => setUserName(e.target.value)} placeholder="Jane Dispatcher" required />
                   </div>
                   <div className="form-group">
                     <label>Email Address</label>
-                    <input type="email" placeholder="jane@truckingedge.com" value={userEmail} onChange={(e) => setUserEmail(e.target.value)} required />
+                    <input type="email" value={userEmail} onChange={(e) => setUserEmail(e.target.value)} placeholder="jane@truckingedge.com" required />
                   </div>
-                  <button type="submit" className="btn-primary">Create User</button>
+                  <button type="submit" className="btn" style={{ width: '100%', marginTop: '10px' }}>Add User Account</button>
                 </form>
               </div>
             </div>
@@ -1172,5 +1171,3 @@ function App() {
     </div>
   );
 }
-
-export default App;

@@ -19,6 +19,7 @@ interface Load {
   fuelCost: number;
   status: 'Pending' | 'In Transit' | 'Delivered';
   date: string;
+  brokerName?: string;
 }
 
 interface Driver {
@@ -28,6 +29,9 @@ interface Driver {
   truck: string;
   payPerMile: number;
   status: 'Available' | 'On Route' | 'Off Duty';
+  drivingHoursLeft?: number;
+  shiftHoursLeft?: number;
+  cycleHoursLeft?: number;
 }
 
 interface FuelEntry {
@@ -67,17 +71,42 @@ interface FuelStation {
   distanceMiles: number;
 }
 
-// --- DEFAULT DATA FOR TRUCKING EDGE DISPATCHERS ---
+interface Invoice {
+  id: string;
+  carrierName: string;
+  loadReference: string;
+  loadRate: number;
+  feePercentage: number;
+  invoiceAmount: number;
+  status: 'Unpaid' | 'Paid';
+  created_at: string;
+}
+
+interface CustomerClient {
+  id: string;
+  companyName: string;
+  contactName: string;
+  mcNumber: string;
+  phone: string;
+  email: string;
+  dispatchFeePercent: number;
+  needsMcLease: boolean;
+  mcLeaseFeePercent: number;
+  status: 'Active' | 'Pending Verification';
+  created_at: string;
+}
+
+// --- DEFAULT DATA ---
 const DEFAULT_LOADS: Load[] = [
-  { id: 'TED-1001', origin: 'Chicago, IL', destination: 'Dallas, TX', driver: 'Marcus Vance', rate: 2400, miles: 925, fuelCost: 450, status: 'In Transit', date: '2026-07-15' },
-  { id: 'TED-1002', origin: 'Atlanta, GA', destination: 'Miami, FL', driver: 'Sarah Jenkins', rate: 1850, miles: 660, fuelCost: 310, status: 'Delivered', date: '2026-07-18' },
-  { id: 'TED-1003', origin: 'Seattle, WA', destination: 'Denver, CO', driver: 'Unassigned', rate: 3100, miles: 1300, fuelCost: 620, status: 'Pending', date: '2026-07-20' },
+  { id: 'TED-1001', origin: 'Chicago, IL', destination: 'Dallas, TX', driver: 'Marcus Vance', rate: 2400, miles: 925, fuelCost: 450, status: 'In Transit', date: '2026-07-15', brokerName: 'TQL Logistics' },
+  { id: 'TED-1002', origin: 'Atlanta, GA', destination: 'Miami, FL', driver: 'Sarah Jenkins', rate: 1850, miles: 660, fuelCost: 310, status: 'Delivered', date: '2026-07-18', brokerName: 'CH Robinson' },
+  { id: 'TED-1003', origin: 'Seattle, WA', destination: 'Denver, CO', driver: 'Unassigned', rate: 3100, miles: 1300, fuelCost: 620, status: 'Pending', date: '2026-07-20', brokerName: 'Landstar' },
 ];
 
 const DEFAULT_DRIVERS: Driver[] = [
-  { id: 'DRV-101', name: 'Marcus Vance', phone: '(555) 234-5678', truck: 'Truck #402', payPerMile: 0.65, status: 'On Route' },
-  { id: 'DRV-102', name: 'Sarah Jenkins', phone: '(555) 876-5432', truck: 'Truck #108', payPerMile: 0.60, status: 'Available' },
-  { id: 'DRV-103', name: 'David Miller', phone: '(555) 345-6789', truck: 'Truck #205', payPerMile: 0.58, status: 'Off Duty' },
+  { id: 'DRV-101', name: 'Marcus Vance', phone: '(555) 234-5678', truck: 'Truck #402', payPerMile: 0.65, status: 'On Route', drivingHoursLeft: 8.5, shiftHoursLeft: 11.0, cycleHoursLeft: 45.0 },
+  { id: 'DRV-102', name: 'Sarah Jenkins', phone: '(555) 876-5432', truck: 'Truck #108', payPerMile: 0.60, status: 'Available', drivingHoursLeft: 11.0, shiftHoursLeft: 14.0, cycleHoursLeft: 60.0 },
+  { id: 'DRV-103', name: 'David Miller', phone: '(555) 345-6789', truck: 'Truck #205', payPerMile: 0.58, status: 'Off Duty', drivingHoursLeft: 11.0, shiftHoursLeft: 14.0, cycleHoursLeft: 52.0 },
 ];
 
 const DEFAULT_FUEL: FuelEntry[] = [
@@ -86,9 +115,9 @@ const DEFAULT_FUEL: FuelEntry[] = [
 ];
 
 const DEFAULT_ELD: ELDRecord[] = [
-  { driverId: 'DRV-101', driverName: 'Marcus Vance', status: 'Driving', driveTimeRemaining: 4.5, dutyTimeRemaining: 6.0, cycleRemaining: 32.5 },
-  { driverId: 'DRV-102', driverName: 'Sarah Jenkins', status: 'Off Duty', driveTimeRemaining: 11.0, dutyTimeRemaining: 14.0, cycleRemaining: 64.0 },
-  { driverId: 'DRV-103', driverName: 'David Miller', status: 'Sleeper', driveTimeRemaining: 11.0, dutyTimeRemaining: 14.0, cycleRemaining: 58.0 },
+  { driverId: 'DRV-101', driverName: 'Marcus Vance', status: 'Driving', driveTimeRemaining: 8.5, dutyTimeRemaining: 11.0, cycleRemaining: 45.0 },
+  { driverId: 'DRV-102', driverName: 'Sarah Jenkins', status: 'Off Duty', driveTimeRemaining: 11.0, dutyTimeRemaining: 14.0, cycleRemaining: 60.0 },
+  { driverId: 'DRV-103', driverName: 'David Miller', status: 'Sleeper', driveTimeRemaining: 11.0, dutyTimeRemaining: 14.0, cycleRemaining: 52.0 },
 ];
 
 const DEFAULT_USERS: User[] = [
@@ -97,38 +126,47 @@ const DEFAULT_USERS: User[] = [
   { id: 'USR-03', name: 'Marcus Vance', email: 'marcus@truckingedgedispatchers.com', role: 'Driver', status: 'Active' },
 ];
 
+const DEFAULT_INVOICES: Invoice[] = [
+  { id: 'INV-3001', carrierName: 'TQL Logistics', loadReference: 'TED-1001', loadRate: 2400, feePercentage: 7, invoiceAmount: 168, status: 'Unpaid', created_at: '2026-07-15' },
+  { id: 'INV-3002', carrierName: 'CH Robinson', loadReference: 'TED-1002', loadRate: 1850, feePercentage: 7, invoiceAmount: 129.5, status: 'Paid', created_at: '2026-07-18' },
+];
+
+const DEFAULT_CUSTOMERS: CustomerClient[] = [
+  { id: 'CUST-501', companyName: 'Apex Transport LLC', contactName: 'Dmitri Petrov', mcNumber: 'MC-883921', phone: '(555) 432-8765', email: 'dispatch@apextransport.com', dispatchFeePercent: 7, needsMcLease: false, mcLeaseFeePercent: 0, status: 'Active', created_at: '2026-06-10' },
+  { id: 'CUST-502', companyName: 'Lone Star Freight Inc', contactName: 'Jessica Taylor', mcNumber: 'MC-992104', phone: '(555) 789-1234', email: 'jessica@lonestarfreight.net', dispatchFeePercent: 7, needsMcLease: true, mcLeaseFeePercent: 20, status: 'Active', created_at: '2026-07-01' },
+];
+
 function App() {
-  // --- AUTHENTICATION STATE ---
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [loginEmail, setLoginEmail] = useState<string>('');
   const [loginPassword, setLoginPassword] = useState<string>('');
 
-  const [activeTab, setActiveTab] = useState<'loads' | 'drivers' | 'eld' | 'fuel' | 'financials' | 'tax' | 'users'>('loads');
+  const [activeTab, setActiveTab] = useState<'loads' | 'drivers' | 'eld' | 'fuel' | 'financials' | 'tax' | 'users' | 'customers'>('customers');
 
-  // --- LOCAL STORAGE NAMESPACED ---
   const [loads, setLoads] = useState<Load[]>(() => JSON.parse(localStorage.getItem('ted_loads') || 'null') || DEFAULT_LOADS);
   const [drivers, setDrivers] = useState<Driver[]>(() => JSON.parse(localStorage.getItem('ted_drivers') || 'null') || DEFAULT_DRIVERS);
   const [fuelEntries, setFuelEntries] = useState<FuelEntry[]>(() => JSON.parse(localStorage.getItem('ted_fuel') || 'null') || DEFAULT_FUEL);
   const [eldRecords, setEldRecords] = useState<ELDRecord[]>(() => JSON.parse(localStorage.getItem('ted_eld') || 'null') || DEFAULT_ELD);
   const [users, setUsers] = useState<User[]>(() => JSON.parse(localStorage.getItem('ted_users') || 'null') || DEFAULT_USERS);
+  const [invoices, setInvoices] = useState<Invoice[]>(() => JSON.parse(localStorage.getItem('ted_invoices') || 'null') || DEFAULT_INVOICES);
+  const [customers, setCustomers] = useState<CustomerClient[]>(() => JSON.parse(localStorage.getItem('ted_customers') || 'null') || DEFAULT_CUSTOMERS);
 
   useEffect(() => localStorage.setItem('ted_loads', JSON.stringify(loads)), [loads]);
   useEffect(() => localStorage.setItem('ted_drivers', JSON.stringify(drivers)), [drivers]);
   useEffect(() => localStorage.setItem('ted_fuel', JSON.stringify(fuelEntries)), [fuelEntries]);
   useEffect(() => localStorage.setItem('ted_eld', JSON.stringify(eldRecords)), [eldRecords]);
   useEffect(() => localStorage.setItem('ted_users', JSON.stringify(users)), [users]);
+  useEffect(() => localStorage.setItem('ted_invoices', JSON.stringify(invoices)), [invoices]);
+  useEffect(() => localStorage.setItem('ted_customers', JSON.stringify(customers)), [customers]);
 
-  // --- MANUAL RPM CALCULATOR STATE (FOR P&L TAB) ---
-  const [manualRate, setManualRate] = useState<string>('');
-  const [manualMiles, setManualMiles] = useState<string>('');
+  const [loadSearch, setLoadSearch] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('All');
 
-  // --- ADMIN TAX & IFTA CALCULATOR STATE ---
   const [estimatedTaxRate] = useState<string>('25'); 
   const [selfEmploymentTaxRate] = useState<string>('15.3'); 
   const [iftaAvgTaxPerGallon] = useState<string>('0.32'); 
   const [fleetMpg] = useState<string>('6.5'); 
 
-  // --- MAP & GPS FUEL STATIONS STATE ---
   const mapRef = useRef<any>(null);
   const [mapCenter] = useState({ lat: 41.8781, lng: -87.6298 });
   const [locationName, setLocationName] = useState('Chicago Hub (Central Dispatch)');
@@ -215,6 +253,7 @@ function App() {
   const [driver, setDriver] = useState('');
   const [rate, setRate] = useState('');
   const [miles, setMiles] = useState('');
+  const [brokerName, setBrokerName] = useState('');
   const [loadDate] = useState(new Date().toISOString().split('T')[0]);
 
   const [fuelDriver, setFuelDriver] = useState('');
@@ -231,8 +270,16 @@ function App() {
   const [userEmail, setUserEmail] = useState('');
   const [userRole] = useState<'Admin' | 'Dispatcher' | 'Driver'>('Dispatcher');
 
-  const [selectedReportDriver, setSelectedReportDriver] = useState<string>('');
-  const [showReportModal, setShowReportModal] = useState(false);
+  // --- CUSTOMER & MC LEASE ONBOARDING FORM STATES ---
+  const [newCustCompany, setNewCustCompany] = useState('');
+  const [newCustContact, setNewCustContact] = useState('');
+  const [newCustMc, setNewCustMc] = useState('');
+  const [newCustPhone, setNewCustPhone] = useState('');
+  const [newCustEmail, setNewCustEmail] = useState('');
+  const [newCustFee, setNewCustFee] = useState('7');
+  const [needsMcLease, setNeedsMcLease] = useState(false);
+  const [mcLeaseFee, setMcLeaseFee] = useState('20');
+  const [agreedTerms, setAgreedTerms] = useState(false);
 
   const [maintenanceCost] = useState('1200');
   const [fixedOverhead] = useState('2500');
@@ -249,19 +296,34 @@ function App() {
 
   const handleAddLoad = (e: React.FormEvent) => {
     e.preventDefault();
+    const parsedRate = parseFloat(rate) || 0;
     const newLoad: Load = {
       id: `TED-${Math.floor(1000 + Math.random() * 9000)}`,
       origin,
       destination,
       driver: driver || 'Unassigned',
-      rate: parseFloat(rate) || 0,
+      rate: parsedRate,
       miles: parseFloat(miles) || 0,
       fuelCost: 0,
       status: 'Pending',
       date: loadDate,
+      brokerName: brokerName || 'Independent Broker'
     };
+    
+    const newInvoice: Invoice = {
+      id: `INV-${Math.floor(3000 + Math.random() * 9000)}`,
+      carrierName: brokerName || 'Independent Broker',
+      loadReference: newLoad.id,
+      loadRate: parsedRate,
+      feePercentage: 7,
+      invoiceAmount: parsedRate * 0.07,
+      status: 'Unpaid',
+      created_at: new Date().toISOString().split('T')[0]
+    };
+
     setLoads([newLoad, ...loads]);
-    setOrigin(''); setDestination(''); setDriver(''); setRate(''); setMiles('');
+    setInvoices([newInvoice, ...invoices]);
+    setOrigin(''); setDestination(''); setDriver(''); setRate(''); setMiles(''); setBrokerName('');
   };
 
   const handleAddFuel = (e: React.FormEvent) => {
@@ -289,6 +351,9 @@ function App() {
       truck: driverTruck || 'Unassigned',
       payPerMile: parseFloat(driverPayRate) || 0.60,
       status: 'Available',
+      drivingHoursLeft: 11.0,
+      shiftHoursLeft: 14.0,
+      cycleHoursLeft: 70.0
     };
     setDrivers([...drivers, newDriver]);
     setEldRecords([...eldRecords, {
@@ -315,11 +380,73 @@ function App() {
     setUserName(''); setUserEmail('');
   };
 
+  const handleOnboardCustomer = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!agreedTerms) {
+      alert('Carrier must accept the Dispatch & MC Lease Agreement terms and conditions.');
+      return;
+    }
+    const newCustomer: CustomerClient = {
+      id: `CUST-${Math.floor(100 + Math.random() * 900)}`,
+      companyName: newCustCompany,
+      contactName: newCustContact,
+      mcNumber: newCustMc,
+      phone: newCustPhone,
+      email: newCustEmail,
+      dispatchFeePercent: parseFloat(newCustFee) || 7,
+      needsMcLease: needsMcLease,
+      mcLeaseFeePercent: needsMcLease ? parseFloat(mcLeaseFee) || 20 : 0,
+      status: 'Active',
+      created_at: new Date().toISOString().split('T')[0]
+    };
+    setCustomers([newCustomer, ...customers]);
+    setNewCustCompany(''); setNewCustContact(''); setNewCustMc(''); setNewCustPhone(''); setNewCustEmail(''); setNewCustFee('7'); setNeedsMcLease(false); setMcLeaseFee('20'); setAgreedTerms(false);
+    alert('Customer successfully onboarded with selected dispatch & MC lease agreements!');
+  };
+
   const handleUpdateELD = (driverId: string, newStatus: ELDRecord['status']) => {
     setEldRecords(eldRecords.map(rec => rec.driverId === driverId ? { ...rec, status: newStatus } : rec));
   };
 
-  // --- CALCULATIONS ---
+  const downloadInvoicePDF = (inv: Invoice) => {
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head><title>Dispatch Invoice #${inv.id}</title></head>
+          <body style="font-family: sans-serif; padding: 40px; color: #333;">
+            <h2 style="color: #3b82f6;">TRUCKING EDGE DISPATCH SERVICES</h2>
+            <hr/>
+            <h3>Invoice #${inv.id}</h3>
+            <p><strong>Carrier/Broker Billed:</strong> ${inv.carrierName}</p>
+            <p><strong>Load Reference:</strong> ${inv.loadReference}</p>
+            <p><strong>Load Gross Rate:</strong> $${Number(inv.loadRate).toLocaleString()}</p>
+            <p><strong>Agreed Fee (${inv.feePercentage}%):</strong> <strong>$${Number(inv.invoiceAmount).toFixed(2)}</strong></p>
+            <p><strong>Status:</strong> ${inv.status}</p>
+            <p><strong>Date Issued:</strong> ${new Date(inv.created_at).toLocaleDateString()}</p>
+            <br/><br/>
+            <p style="font-size: 12px; color: #777;">Thank you for partnering with Trucking Edge Dispatch.</p>
+            <script>window.print();</script>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+    }
+  };
+
+  const filteredLoads = loads.filter((load) => {
+    const searchString = loadSearch.toLowerCase();
+    const matchesSearch = 
+      load.origin.toLowerCase().includes(searchString) ||
+      load.destination.toLowerCase().includes(searchString) ||
+      (load.brokerName && load.brokerName.toLowerCase().includes(searchString)) ||
+      load.driver.toLowerCase().includes(searchString) ||
+      load.id.toLowerCase().includes(searchString);
+    
+    const matchesStatus = statusFilter === 'All' || load.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
   const totalGrossRevenue = loads.reduce((sum, l) => sum + l.rate, 0);
   const totalMilesDriven = loads.reduce((sum, l) => sum + l.miles, 0);
   const avgRPM = totalMilesDriven > 0 ? (totalGrossRevenue / totalMilesDriven) : 0;
@@ -335,31 +462,6 @@ function App() {
   const totalExpenses = totalFuelCost + totalDriverPay + (parseFloat(maintenanceCost) || 0) + (parseFloat(fixedOverhead) || 0);
   const netProfit = totalGrossRevenue - totalExpenses;
 
-  const incomeTaxOwed = netProfit > 0 ? (netProfit * (parseFloat(estimatedTaxRate) || 0) / 100) : 0;
-  const selfEmpTaxOwed = netProfit > 0 ? (netProfit * (parseFloat(selfEmploymentTaxRate) || 0) / 100) : 0;
-  const totalEstimatedTax = incomeTaxOwed + selfEmpTaxOwed;
-
-  const requiredGallonsIFTA = totalMilesDriven / (parseFloat(fleetMpg) || 6.5);
-  const iftaTaxRequired = requiredGallonsIFTA * (parseFloat(iftaAvgTaxPerGallon) || 0.32);
-  const fuelTaxPaidAtPump = totalGallonsPurchased * (parseFloat(iftaAvgTaxPerGallon) || 0.32);
-  const iftaBalanceOwed = iftaTaxRequired - fuelTaxPaidAtPump;
-
-  const getDriverReport = (driverName: string) => {
-    const driverLoads = loads.filter(l => l.driver === driverName);
-    const driverFuel = fuelEntries.filter(f => f.driverName === driverName);
-    const drvInfo = drivers.find(d => d.name === driverName);
-
-    const miles = driverLoads.reduce((sum, l) => sum + l.miles, 0);
-    const gross = driverLoads.reduce((sum, l) => sum + l.rate, 0);
-    const fuelSpent = driverFuel.reduce((sum, f) => sum + f.cost, 0);
-    const payEarned = miles * (drvInfo ? drvInfo.payPerMile : 0.60);
-    const netProfitContrib = gross - (fuelSpent + payEarned);
-    const driverRPM = miles > 0 ? gross / miles : 0;
-
-    return { driverLoads, miles, gross, fuelSpent, payEarned, netProfitContrib, driverRPM, drvInfo };
-  };
-
-  // --- LOGIN SCREEN RENDERING IF NOT AUTHENTICATED ---
   if (!isAuthenticated) {
     return (
       <div style={{ display: 'flex', height: '100vh', justifyContent: 'center', alignItems: 'center', background: '#0f172a', color: '#fff', fontFamily: 'sans-serif' }}>
@@ -424,11 +526,14 @@ function App() {
             <span style={{ fontSize: '0.75rem', color: '#94a3b8', letterSpacing: '2px' }}>DISPATCHERS</span>
           </div>
           <nav className="nav-menu">
+            <button className={`nav-item ${activeTab === 'customers' ? 'active' : ''}`} onClick={() => setActiveTab('customers')}>
+              🤝 Customer & MC Lease
+            </button>
             <button className={`nav-item ${activeTab === 'loads' ? 'active' : ''}`} onClick={() => setActiveTab('loads')}>
               📋 Dispatch & RPM
             </button>
             <button className={`nav-item ${activeTab === 'drivers' ? 'active' : ''}`} onClick={() => setActiveTab('drivers')}>
-              👨‍✈️ Driver Roster
+              👨‍✈️ Driver Roster & HOS
             </button>
             <button className={`nav-item ${activeTab === 'eld' ? 'active' : ''}`} onClick={() => setActiveTab('eld')}>
               📟 ELD / HOS Logs
@@ -437,7 +542,7 @@ function App() {
               ⛽ Fuel Map & Logs
             </button>
             <button className={`nav-item ${activeTab === 'financials' ? 'active' : ''}`} onClick={() => setActiveTab('financials')}>
-              💰 Profit & Loss
+              💰 Profit & Loss / Invoices
             </button>
             <button className={`nav-item ${activeTab === 'tax' ? 'active' : ''}`} onClick={() => setActiveTab('tax')}>
               🏛️ Admin Tax & IFTA
@@ -454,14 +559,15 @@ function App() {
         </aside>
 
         {/* Main Content View */}
-        <main className="main-content">
+        <main className="main-content" style={{ overflowY: 'auto' }}>
           <header className="header">
             <h1>
+              {activeTab === 'customers' && 'Carrier Onboarding & MC Lease Program'}
               {activeTab === 'loads' && 'Trucking Edge Dispatch & RPM Center'}
-              {activeTab === 'drivers' && 'Fleet Driver Roster & Performance'}
+              {activeTab === 'drivers' && 'Fleet Driver Roster & HOS Tracking'}
               {activeTab === 'eld' && 'ELD Hours of Service (HOS) Telemetry'}
               {activeTab === 'fuel' && 'Fuel Network & GPS Station Locator'}
-              {activeTab === 'financials' && 'Trucking Edge Profit & Loss (P&L)'}
+              {activeTab === 'financials' && 'Trucking Edge Profit & Loss & Invoicing'}
               {activeTab === 'tax' && 'Administrator Tax & IFTA Center'}
               {activeTab === 'users' && 'System Authorization & User Roles'}
             </h1>
@@ -489,55 +595,230 @@ function App() {
             </div>
           </div>
 
-          {/* TAB 1: DISPATCH & LOADS */}
-          {activeTab === 'loads' && (
+          {/* TAB 0: CUSTOMER ONBOARDING & MC LEASE */}
+          {activeTab === 'customers' && (
             <div className="content-grid">
-              <div className="card table-card">
-                <h2>Active Dispatches</h2>
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Load ID</th>
-                      <th>Route</th>
-                      <th>Miles</th>
-                      <th>Gross Rate</th>
-                      <th>RPM</th>
-                      <th>Driver</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {loads.map(l => {
-                      const rpm = l.miles > 0 ? (l.rate / l.miles).toFixed(2) : 'N/A';
-                      return (
-                        <tr key={l.id}>
-                          <td><strong>{l.id}</strong></td>
-                          <td>{l.origin} ➔ {l.destination}</td>
-                          <td>{l.miles} mi</td>
-                          <td>${l.rate.toLocaleString()}</td>
-                          <td><strong style={{ color: '#f59e0b' }}>${rpm}/mi</strong></td>
-                          <td>{l.driver}</td>
+              <div className="card table-card" style={{ display: 'flex', flexDirection: 'column' }}>
+                <h2>Active Onboarded Carriers & MC Lease Clients</h2>
+                <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '15px' }}>
+                  Carriers under contract and whether they lease under your MC authority (with insurance & ELD covered).
+                </p>
+                <div style={{ overflowX: 'auto' }}>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Company Name</th>
+                        <th>Contact / MC#</th>
+                        <th>Phone / Email</th>
+                        <th>Dispatch Fee</th>
+                        <th>MC Lease Status</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {customers.map(c => (
+                        <tr key={c.id}>
+                          <td><strong>{c.companyName}</strong><br/><small style={{color: '#94a3b8'}}>Joined: {c.created_at}</small></td>
+                          <td>{c.contactName}<br/><strong>{c.mcNumber}</strong></td>
+                          <td>{c.phone}<br/><small style={{color: '#94a3b8'}}>{c.email}</small></td>
+                          <td><strong style={{ color: '#22c55e' }}>{c.dispatchFeePercent}%</strong></td>
                           <td>
-                            <select 
-                              value={l.status} 
-                              onChange={(e) => setLoads(loads.map(item => item.id === l.id ? { ...item, status: e.target.value as any } : item))}
-                              className="status-select"
-                            >
-                              <option value="Pending">Pending</option>
-                              <option value="In Transit">In Transit</option>
-                              <option value="Delivered">Delivered</option>
-                            </select>
+                            {c.needsMcLease ? (
+                              <span style={{ padding: '4px 8px', borderRadius: '4px', background: '#3b82f6', color: '#fff', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                                Leased on MC ({c.mcLeaseFeePercent}%)
+                              </span>
+                            ) : (
+                              <span style={{ color: '#94a3b8', fontSize: '0.8rem' }}>Own Authority</span>
+                            )}
+                          </td>
+                          <td>
+                            <span style={{ padding: '4px 8px', borderRadius: '4px', background: '#166534', color: '#fff', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                              {c.status}
+                            </span>
                           </td>
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                      ))}
+                      {customers.length === 0 && (
+                        <tr>
+                          <td colSpan={6} style={{ textAlign: 'center', padding: '20px', color: '#94a3b8' }}>No customer clients onboarded yet.</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="card form-card">
+                <h2>🤝 Carrier Onboarding & MC Lease Form</h2>
+                <p style={{ color: '#94a3b8', fontSize: '0.8rem', marginBottom: '15px' }}>
+                  Register a new carrier, set dispatch percentage, and opt them into your MC lease program (17%–25% covering insurance & ELD).
+                </p>
+                <form onSubmit={handleOnboardCustomer}>
+                  <div className="form-group">
+                    <label>Carrier / Company Name</label>
+                    <input type="text" placeholder="e.g. Swift Logistics LLC" value={newCustCompany} onChange={(e) => setNewCustCompany(e.target.value)} required />
+                  </div>
+                  <div className="form-group">
+                    <label>Contact Person Name</label>
+                    <input type="text" placeholder="e.g. John Doe" value={newCustContact} onChange={(e) => setNewCustContact(e.target.value)} required />
+                  </div>
+                  <div className="form-group">
+                    <label>Carrier MC Number / USDOT</label>
+                    <input type="text" placeholder="e.g. MC-123456" value={newCustMc} onChange={(e) => setNewCustMc(e.target.value)} required />
+                  </div>
+                  <div className="form-group">
+                    <label>Phone Number</label>
+                    <input type="text" placeholder="(555) 019-2831" value={newCustPhone} onChange={(e) => setNewCustPhone(e.target.value)} required />
+                  </div>
+                  <div className="form-group">
+                    <label>Email Address</label>
+                    <input type="email" placeholder="carrier@company.com" value={newCustEmail} onChange={(e) => setNewCustEmail(e.target.value)} required />
+                  </div>
+                  <div className="form-group">
+                    <label>Dispatch Fee Percentage (%)</label>
+                    <select value={newCustFee} onChange={(e) => setNewCustFee(e.target.value)} className="status-select" required>
+                      <option value="5">5% (Volume Rate)</option>
+                      <option value="6">6%</option>
+                      <option value="7">7% (Standard Dispatch)</option>
+                      <option value="8">8%</option>
+                      <option value="10">10% (Full Service)</option>
+                    </select>
+                  </div>
+
+                  {/* MC Lease Toggle Section (17% - 25%) */}
+                  <div style={{ background: '#0f172a', padding: '14px', borderRadius: '6px', border: '1px solid #334155', marginBottom: '15px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: needsMcLease ? '10px' : '0' }}>
+                      <input 
+                        type="checkbox" 
+                        id="mcLeaseToggle" 
+                        checked={needsMcLease} 
+                        onChange={(e) => setNeedsMcLease(e.target.checked)} 
+                        style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                      />
+                      <label htmlFor="mcLeaseToggle" style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#f59e0b', cursor: 'pointer' }}>
+                        Carrier needs MC Lease-On Program (Run under our MC authority)
+                      </label>
+                    </div>
+
+                    {needsMcLease && (
+                      <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed #334155' }}>
+                        <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.85rem' }}>MC Lease Fee Percentage (%) [Covers Insurance & ELD]</label>
+                        <select value={mcLeaseFee} onChange={(e) => setMcLeaseFee(e.target.value)} className="status-select">
+                          <option value="17">17% (Basic Lease)</option>
+                          <option value="18">18%</option>
+                          <option value="20">20% (Standard Lease)</option>
+                          <option value="22">22%</option>
+                          <option value="25">25% (Full Comprehensive Authority)</option>
+                        </select>
+                        <small style={{ color: '#94a3b8', display: 'block', marginTop: '4px' }}>
+                          Includes primary liability, cargo insurance, and ELD provision.
+                        </small>
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>
+                    <input 
+                      type="checkbox" 
+                      id="termsCheck" 
+                      checked={agreedTerms} 
+                      onChange={(e) => setAgreedTerms(e.target.checked)} 
+                      style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                      required
+                    />
+                    <label htmlFor="termsCheck" style={{ fontSize: '0.85rem', cursor: 'pointer' }}>
+                      Carrier agrees to Dispatch & MC Lease percentage agreement terms.
+                    </label>
+                  </div>
+
+                  <button type="submit" className="btn-primary">Onboard Carrier & Setup Program</button>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 1: DISPATCH & LOADS WITH SEARCH & FILTERS */}
+          {activeTab === 'loads' && (
+            <div className="content-grid">
+              <div className="card table-card" style={{ display: 'flex', flexDirection: 'column' }}>
+                <h2>Active Dispatches</h2>
+                
+                <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+                  <input 
+                    placeholder="🔍 Search loads by origin, destination, broker, driver..." 
+                    value={loadSearch} 
+                    onChange={(e) => setLoadSearch(e.target.value)} 
+                    style={{ flex: 2, padding: '8px', borderRadius: '4px', border: '1px solid #334155', background: '#0f172a', color: '#fff' }} 
+                  />
+                  <select 
+                    value={statusFilter} 
+                    onChange={(e) => setStatusFilter(e.target.value)} 
+                    style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #334155', background: '#0f172a', color: '#fff' }}
+                  >
+                    <option value="All">All Statuses</option>
+                    <option value="Pending">Pending</option>
+                    <option value="In Transit">In Transit</option>
+                    <option value="Delivered">Delivered</option>
+                  </select>
+                </div>
+
+                <div style={{ overflowX: 'auto' }}>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Load ID</th>
+                        <th>Broker</th>
+                        <th>Route</th>
+                        <th>Miles</th>
+                        <th>Gross Rate</th>
+                        <th>RPM</th>
+                        <th>Driver</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredLoads.map(l => {
+                        const rpm = l.miles > 0 ? (l.rate / l.miles).toFixed(2) : 'N/A';
+                        return (
+                          <tr key={l.id}>
+                            <td><strong>{l.id}</strong></td>
+                            <td>{l.brokerName || 'Broker'}</td>
+                            <td>{l.origin} ➔ {l.destination}</td>
+                            <td>{l.miles} mi</td>
+                            <td>${l.rate.toLocaleString()}</td>
+                            <td><strong style={{ color: '#f59e0b' }}>${rpm}/mi</strong></td>
+                            <td>{l.driver}</td>
+                            <td>
+                              <select 
+                                value={l.status} 
+                                onChange={(e) => setLoads(loads.map(item => item.id === l.id ? { ...item, status: e.target.value as any } : item))}
+                                className="status-select"
+                              >
+                                <option value="Pending">Pending</option>
+                                <option value="In Transit">In Transit</option>
+                                <option value="Delivered">Delivered</option>
+                              </select>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {filteredLoads.length === 0 && (
+                        <tr>
+                          <td colSpan={8} style={{ textAlign: 'center', padding: '20px', color: '#94a3b8' }}>No loads match your search criteria.</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
               <div className="card form-card">
                 <h2>Book New Freight</h2>
                 <form onSubmit={handleAddLoad}>
+                  <div className="form-group">
+                    <label>Broker / Shipper Name</label>
+                    <input type="text" placeholder="e.g. TQL Logistics" value={brokerName} onChange={(e) => setBrokerName(e.target.value)} />
+                  </div>
                   <div className="form-group">
                     <label>Pickup Location</label>
                     <input type="text" placeholder="e.g. Chicago, IL" value={origin} onChange={(e) => setOrigin(e.target.value)} required />
@@ -574,37 +855,34 @@ function App() {
             </div>
           )}
 
-          {/* TAB 2: DRIVERS & REPORTS */}
+          {/* TAB 2: DRIVERS & HOS TRACKER */}
           {activeTab === 'drivers' && (
             <div className="content-grid">
               <div className="card table-card">
-                <h2>Driver Roster & Reports</h2>
+                <h2>Driver Roster & HOS Hours Tracker</h2>
                 <table>
                   <thead>
                     <tr>
                       <th>Driver</th>
-                      <th>Phone</th>
-                      <th>Truck</th>
+                      <th>Phone / Truck</th>
                       <th>Pay Rate</th>
                       <th>Status</th>
-                      <th>Action</th>
+                      <th>Live HOS Tracking (Motive/Samsara synced)</th>
                     </tr>
                   </thead>
                   <tbody>
                     {drivers.map(d => (
                       <tr key={d.id}>
                         <td><strong>{d.name}</strong></td>
-                        <td>{d.phone}</td>
-                        <td>{d.truck}</td>
+                        <td>{d.phone} | {d.truck}</td>
                         <td>${d.payPerMile.toFixed(2)}/mi</td>
                         <td><strong>{d.status}</strong></td>
                         <td>
-                          <button 
-                            onClick={() => { setSelectedReportDriver(d.name); setShowReportModal(true); }}
-                            style={{ background: '#3b82f6', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
-                          >
-                            📄 Performance
-                          </button>
+                          <div style={{ fontSize: '12px', background: '#0f172a', padding: '6px 10px', borderRadius: '4px', border: '1px solid #334155', display: 'flex', gap: '15px' }}>
+                            <span>🚗 <strong>Drive Left:</strong> {d.drivingHoursLeft ?? 11} hrs</span>
+                            <span>⏰ <strong>Shift Left:</strong> {d.shiftHoursLeft ?? 14} hrs</span>
+                            <span>📅 <strong>70-Hr Cycle:</strong> {d.cycleHoursLeft ?? 70} hrs</span>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -670,7 +948,7 @@ function App() {
                         <select 
                           value={rec.status}
                           onChange={(e) => handleUpdateELD(rec.driverId, e.target.value as any)}
-                          style={{ padding: '6px' }}
+                          style={{ padding: '6px', background: '#0f172a', color: '#fff', border: '1px solid #334155', borderRadius: '4px' }}
                         >
                           <option value="Driving">Driving</option>
                           <option value="On Duty">On Duty</option>
@@ -691,60 +969,37 @@ function App() {
               <div className="card" style={{ padding: '20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap', gap: '10px' }}>
                   <div>
-                    <h2 style={{ margin: 0 }}>📍 Nearby Fuel Stops & GPS Telemetry</h2>
-                    <span style={{ color: '#94a3b8', fontSize: '0.9rem' }}>Center: <strong>{locationName}</strong></span>
+                    <h2 style={{ margin: 0 }}>📍 Nearby Fuel Network & GPS Locator</h2>
+                    <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: '4px 0 0 0' }}>Current Center: {locationName}</p>
                   </div>
-                  <button 
-                    onClick={handleFindGPSLocation}
-                    style={{ background: '#22c55e', color: '#000', border: 'none', padding: '10px 16px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}
-                  >
-                    📍 Locate Nearest Fuel (GPS)
+                  <button onClick={handleFindGPSLocation} style={{ background: '#3b82f6', color: '#fff', border: 'none', padding: '10px 16px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>
+                    🛰️ Use My GPS Position
                   </button>
                 </div>
-
-                <div id="fuel-map-container" style={{ height: '350px', width: '100%', borderRadius: '8px', border: '1px solid #334155' }}></div>
-
-                <div style={{ marginTop: '16px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px' }}>
-                  {nearbyStations.map(st => (
-                    <div key={st.id} style={{ border: '1px solid #334155', padding: '12px', borderRadius: '6px', background: '#0f172a' }}>
-                      <div style={{ fontWeight: 'bold', color: '#f59e0b' }}>{st.name}</div>
-                      <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>{st.address}</div>
-                      <div style={{ marginTop: '6px', display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ color: '#22c55e', fontWeight: 'bold' }}>${st.dieselPrice.toFixed(2)} / gal</span>
-                        <small>{st.distanceMiles} mi away</small>
-                      </div>
-                      <button 
-                        onClick={() => setFuelLocation(st.name + ' - ' + st.address)}
-                        style={{ marginTop: '8px', width: '100%', background: '#334155', color: '#fff', border: 'none', padding: '6px', borderRadius: '4px', cursor: 'pointer' }}
-                      >
-                        ⛽ Fill Fuel Here
-                      </button>
-                    </div>
-                  ))}
-                </div>
+                <div id="fuel-map-container" style={{ width: '100%', height: '350px', borderRadius: '8px', border: '1px solid #334155', background: '#1e293b' }}></div>
               </div>
 
-              <div className="content-grid">
+              <div className="content-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
                 <div className="card table-card">
-                  <h2>Recorded Fuel Purchases</h2>
+                  <h2>Fuel Purchase History</h2>
                   <table>
                     <thead>
                       <tr>
-                        <th>Date</th>
                         <th>Driver</th>
                         <th>Truck</th>
                         <th>Gallons</th>
                         <th>Cost</th>
+                        <th>Location</th>
                       </tr>
                     </thead>
                     <tbody>
                       {fuelEntries.map(f => (
                         <tr key={f.id}>
-                          <td>{f.date}</td>
                           <td><strong>{f.driverName}</strong></td>
                           <td>{f.truck}</td>
                           <td>{f.gallons} gal</td>
-                          <td><strong style={{ color: '#ef4444' }}>${f.cost.toLocaleString()}</strong></td>
+                          <td>${f.cost.toFixed(2)}</td>
+                          <td>{f.location}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -756,117 +1011,124 @@ function App() {
                   <form onSubmit={handleAddFuel}>
                     <div className="form-group">
                       <label>Driver</label>
-                      <select value={fuelDriver} onChange={(e) => setFuelDriver(e.target.value)} required>
-                        <option value="">-- Select Driver --</option>
+                      <select value={fuelDriver} onChange={(e) => setFuelDriver(e.target.value)} className="status-select" required>
+                        <option value="">Select Driver</option>
                         {drivers.map(d => <option key={d.id} value={d.name}>{d.name} ({d.truck})</option>)}
                       </select>
                     </div>
                     <div className="form-group">
-                      <label>Gallons Purchased</label>
-                      <input type="number" value={gallons} onChange={(e) => setGallons(e.target.value)} required />
+                      <label>Gallons</label>
+                      <input type="number" step="0.1" placeholder="120" value={gallons} onChange={(e) => setGallons(e.target.value)} required />
                     </div>
                     <div className="form-group">
                       <label>Total Cost ($)</label>
-                      <input type="number" value={fuelCost} onChange={(e) => setFuelCost(e.target.value)} required />
+                      <input type="number" step="0.01" placeholder="450.00" value={fuelCost} onChange={(e) => setFuelCost(e.target.value)} required />
                     </div>
                     <div className="form-group">
-                      <label>Location</label>
-                      <input type="text" value={fuelLocation} onChange={(e) => setFuelLocation(e.target.value)} placeholder="Select from map or type" required />
+                      <label>Location / Truck Stop</label>
+                      <input type="text" placeholder="Love's #310 - St. Louis, MO" value={fuelLocation} onChange={(e) => setFuelLocation(e.target.value)} required />
                     </div>
-                    <button type="submit" className="btn-primary">Save Fuel Entry</button>
+                    <button type="submit" className="btn-primary">Record Fuel</button>
                   </form>
                 </div>
               </div>
             </div>
           )}
 
-          {/* TAB 5: FINANCIALS & MANUAL RPM CALCULATOR */}
+          {/* TAB 5: FINANCIALS & PDF INVOICES */}
           {activeTab === 'financials' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div className="card" style={{ padding: '20px' }}>
-                <h2>💰 Fleet Financial Statement (P&L)</h2>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginTop: '15px' }}>
-                  <div style={{ background: '#0f172a', padding: '15px', borderRadius: '6px' }}>
-                    <span style={{ color: '#94a3b8' }}>Total Revenue</span>
-                    <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#f59e0b' }}>${totalGrossRevenue.toLocaleString()}</div>
-                  </div>
-                  <div style={{ background: '#0f172a', padding: '15px', borderRadius: '6px' }}>
-                    <span style={{ color: '#94a3b8' }}>Fuel Expense</span>
-                    <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#ef4444' }}>-${totalFuelCost.toLocaleString()}</div>
-                  </div>
-                  <div style={{ background: '#0f172a', padding: '15px', borderRadius: '6px' }}>
-                    <span style={{ color: '#94a3b8' }}>Driver Pay</span>
-                    <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#ef4444' }}>-${totalDriverPay.toLocaleString()}</div>
-                  </div>
-                  <div style={{ background: '#0f172a', padding: '15px', borderRadius: '6px' }}>
-                    <span style={{ color: '#94a3b8' }}>Net Operating Profit</span>
-                    <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: netProfit >= 0 ? '#22c55e' : '#ef4444' }}>${netProfit.toLocaleString()}</div>
-                  </div>
+              <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+                <div className="stat-card">
+                  <span className="label">Total Revenue</span>
+                  <div className="value" style={{ color: '#f59e0b' }}>${totalGrossRevenue.toLocaleString()}</div>
+                </div>
+                <div className="stat-card">
+                  <span className="label">Total Fleet Expenses</span>
+                  <div className="value" style={{ color: '#ef4444' }}>${totalExpenses.toLocaleString()}</div>
+                </div>
+                <div className="stat-card">
+                  <span className="label">Net Operating Profit</span>
+                  <div className="value" style={{ color: netProfit >= 0 ? '#22c55e' : '#ef4444' }}>${netProfit.toLocaleString()}</div>
                 </div>
               </div>
 
-              {/* Manual RPM Calculator Card */}
-              <div className="card" style={{ padding: '20px' }}>
-                <h2>🧮 Manual RPM (Rate Per Mile) Calculator</h2>
-                <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '15px' }}>
-                  Manually enter prospective load metrics to check profitability and RPM instantly.
-                </p>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '15px', alignItems: 'end' }}>
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label>Gross Load Rate ($)</label>
-                    <input 
-                      type="number" 
-                      placeholder="e.g. 2500" 
-                      value={manualRate} 
-                      onChange={(e) => setManualRate(e.target.value)} 
-                      style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #334155', background: '#0f172a', color: '#fff' }}
-                    />
-                  </div>
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label>Total Miles</label>
-                    <input 
-                      type="number" 
-                      placeholder="e.g. 850" 
-                      value={manualMiles} 
-                      onChange={(e) => setManualMiles(e.target.value)} 
-                      style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #334155', background: '#0f172a', color: '#fff' }}
-                    />
-                  </div>
-                  <div style={{ background: '#0f172a', padding: '12px 15px', borderRadius: '6px', border: '1px solid #334155', textAlign: 'center' }}>
-                    <span style={{ fontSize: '0.8rem', color: '#94a3b8', display: 'block' }}>Calculated RPM Result</span>
-                    <span style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#f59e0b' }}>
-                      {manualRate && manualMiles && parseFloat(manualMiles) > 0 
-                        ? `$${(parseFloat(manualRate) / parseFloat(manualMiles)).toFixed(2)} / mi` 
-                        : '$0.00 / mi'}
-                    </span>
-                  </div>
-                </div>
+              <div className="card table-card">
+                <h2>🖨️ Dispatch Invoices & Printable PDFs</h2>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Invoice ID</th>
+                      <th>Carrier / Broker</th>
+                      <th>Load Ref</th>
+                      <th>Gross Rate</th>
+                      <th>Dispatch Fee</th>
+                      <th>Status</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {invoices.map(inv => (
+                      <tr key={inv.id}>
+                        <td><strong>{inv.id}</strong></td>
+                        <td>{inv.carrierName}</td>
+                        <td>{inv.loadReference}</td>
+                        <td>${inv.loadRate.toLocaleString()}</td>
+                        <td><strong style={{ color: '#22c55e' }}>${inv.invoiceAmount.toFixed(2)}</strong></td>
+                        <td>
+                          <select 
+                            value={inv.status} 
+                            onChange={(e) => setInvoices(invoices.map(i => i.id === inv.id ? { ...i, status: e.target.value as any } : i))}
+                            style={{ padding: '4px', background: '#0f172a', color: '#fff', border: '1px solid #334155', borderRadius: '4px' }}
+                          >
+                            <option value="Unpaid">Unpaid</option>
+                            <option value="Paid">Paid</option>
+                          </select>
+                        </td>
+                        <td>
+                          <button onClick={() => downloadInvoicePDF(inv)} style={{ fontSize: '12px', padding: '6px 12px', background: '#3b82f6', color: '#fff', border: 'none', cursor: 'pointer', borderRadius: '4px', fontWeight: 'bold' }}>
+                            🖨️ Print / Download PDF
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}
 
-          {/* TAB 6: TAX & IFTA */}
+          {/* TAB 6: ADMIN TAX & IFTA */}
           {activeTab === 'tax' && (
-            <div className="card" style={{ padding: '20px' }}>
-              <h2>🏛️ Administrator Tax & IFTA Estimator</h2>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '15px' }}>
-                <div style={{ background: '#0f172a', padding: '15px', borderRadius: '6px' }}>
-                  <h3>Estimated Income & SE Tax</h3>
-                  <p>Total Estimated Liability: <strong style={{ color: '#f59e0b' }}>${totalEstimatedTax.toFixed(2)}</strong></p>
+            <div className="card table-card">
+              <h2>🏛️ Administrator Tax & IFTA Center</h2>
+              <p style={{ color: '#94a3b8', marginBottom: '20px' }}>Automated quarterly IFTA fuel tax estimates and federal tax projections based on real fleet telematics.</p>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                <div style={{ background: '#0f172a', padding: '20px', borderRadius: '8px', border: '1px solid #334155' }}>
+                  <h3 style={{ color: '#f59e0b', marginTop: 0 }}>Quarterly IFTA Fuel Tax Estimate</h3>
+                  <p>Total Miles Driven: <strong>{totalMilesDriven.toLocaleString()} mi</strong></p>
+                  <p>Total Gallons Purchased: <strong>{totalGallonsPurchased.toLocaleString()} gal</strong></p>
+                  <p>Fleet Average MPG: <strong>{fleetMpg} MPG</strong></p>
+                  <hr style={{ borderColor: '#334155' }}/>
+                  <p style={{ fontSize: '1.1rem' }}>Estimated IFTA Net Due: <strong style={{ color: '#22c55e' }}>${Math.abs((totalMilesDriven / parseFloat(fleetMpg) * parseFloat(iftaAvgTaxPerGallon)) - (totalGallonsPurchased * parseFloat(iftaAvgTaxPerGallon))).toFixed(2)}</strong></p>
                 </div>
-                <div style={{ background: '#0f172a', padding: '15px', borderRadius: '6px' }}>
-                  <h3>IFTA Fuel Tax Balance</h3>
-                  <p>Net Balance Owed/Refund: <strong style={{ color: iftaBalanceOwed >= 0 ? '#ef4444' : '#22c55e' }}>${iftaBalanceOwed.toFixed(2)}</strong></p>
+
+                <div style={{ background: '#0f172a', padding: '20px', borderRadius: '8px', border: '1px solid #334155' }}>
+                  <h3 style={{ color: '#3b82f6', marginTop: 0 }}>Annual Tax Liability Projections</h3>
+                  <p>Net Operating Profit: <strong>${netProfit.toLocaleString()}</strong></p>
+                  <p>Estimated Income Tax ({estimatedTaxRate}%): <strong>${(netProfit > 0 ? netProfit * (parseFloat(estimatedTaxRate) / 100) : 0).toFixed(2)}</strong></p>
+                  <p>Self-Employment Tax ({selfEmploymentTaxRate}%): <strong>${(netProfit > 0 ? netProfit * (parseFloat(selfEmploymentTaxRate) / 100) : 0).toFixed(2)}</strong></p>
                 </div>
               </div>
             </div>
           )}
 
-          {/* TAB 7: USERS */}
+          {/* TAB 7: USERS & ROLES */}
           {activeTab === 'users' && (
             <div className="content-grid">
               <div className="card table-card">
-                <h2>System Users</h2>
+                <h2>Fleet Access Roles</h2>
                 <table>
                   <thead>
                     <tr>
@@ -882,7 +1144,7 @@ function App() {
                         <td><strong>{u.name}</strong></td>
                         <td>{u.email}</td>
                         <td>{u.role}</td>
-                        <td>{u.status}</td>
+                        <td><strong>{u.status}</strong></td>
                       </tr>
                     ))}
                   </tbody>
@@ -890,63 +1152,23 @@ function App() {
               </div>
 
               <div className="card form-card">
-                <h2>Add User Account</h2>
+                <h2>Add System User</h2>
                 <form onSubmit={handleAddUser}>
                   <div className="form-group">
-                    <label>Name</label>
-                    <input type="text" value={userName} onChange={(e) => setUserName(e.target.value)} required />
+                    <label>Full Name</label>
+                    <input type="text" placeholder="Jane Doe" value={userName} onChange={(e) => setUserName(e.target.value)} required />
                   </div>
                   <div className="form-group">
-                    <label>Email</label>
-                    <input type="email" value={userEmail} onChange={(e) => setUserEmail(e.target.value)} required />
+                    <label>Email Address</label>
+                    <input type="email" placeholder="jane@truckingedge.com" value={userEmail} onChange={(e) => setUserEmail(e.target.value)} required />
                   </div>
                   <button type="submit" className="btn-primary">Create User</button>
                 </form>
               </div>
             </div>
           )}
-
         </main>
       </div>
-
-      {/* Right Marketing / Promo Banner */}
-      <aside style={{ width: '180px', background: '#1e293b', borderLeft: '1px solid #334155', padding: '20px 12px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', color: '#94a3b8', fontSize: '0.85rem', textAlign: 'center', flexShrink: 0 }}>
-        <div>
-          <h3 style={{ color: '#22c55e', fontSize: '0.9rem', marginBottom: '10px' }}>🚀 PROMO</h3>
-          <p style={{ marginBottom: '15px', lineHeight: '1.4' }}>Upgrade to Dispatch Pro for live freight board integrations.</p>
-          <a href="#sponsor2" onClick={(e) => { e.preventDefault(); alert('Right Banner Link Clicked!'); }} style={{ color: '#3b82f6', textDecoration: 'none', fontWeight: 'bold', fontSize: '0.8rem' }}>Upgrade Now &rarr;</a>
-        </div>
-        <div style={{ background: '#0f172a', padding: '12px 8px', borderRadius: '6px', border: '1px dashed #475569' }}>
-          <span style={{ fontSize: '0.75rem', display: 'block', color: '#cbd5e1' }}>Partner Slot #2</span>
-          <span style={{ fontSize: '0.65rem', color: '#64748b' }}>Custom HTML Banner</span>
-        </div>
-      </aside>
-
-      {/* Driver Performance Modal */}
-      {showReportModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
-          <div style={{ background: '#1e293b', padding: '30px', borderRadius: '8px', width: '90%', maxWidth: '500px', color: '#fff' }}>
-            <h2>Driver Performance: {selectedReportDriver}</h2>
-            {(() => {
-              const rep = getDriverReport(selectedReportDriver);
-              return (
-                <div style={{ marginTop: '15px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <div>Total Miles: <strong>{rep.miles} mi</strong></div>
-                  <div>Gross Generated: <strong style={{ color: '#f59e0b' }}>${rep.gross.toLocaleString()}</strong></div>
-                  <div>Driver Pay Earned: <strong>${rep.payEarned.toFixed(2)}</strong></div>
-                  <div>Average RPM: <strong>${rep.driverRPM.toFixed(2)}/mi</strong></div>
-                </div>
-              );
-            })()}
-            <button 
-              onClick={() => setShowReportModal(false)}
-              style={{ marginTop: '20px', background: '#3b82f6', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
-            >
-              Close Report
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

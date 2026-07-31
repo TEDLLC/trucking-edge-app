@@ -7,6 +7,7 @@ import McSearchWidget from './McSearchWidget';
 import InsuranceCalculator from './InsuranceCalculator';
 import IftaAndDocuments from './IftaAndDocuments';
 import EldComparison from './EldComparison';
+import LandingPage from './LandingPage';
 
 // --- LEAFLET TYPING OVERRIDE ---
 declare global {
@@ -24,9 +25,10 @@ interface Load {
   rate: number;
   miles: number;
   fuelCost: number;
-  status: 'Pending' | 'In Transit' | 'Delivered';
+  status: 'Pending' | 'In Transit' | 'Delivered' | 'Dispatched';
   date: string;
   brokerName?: string;
+  assignedDriver?: string;
 }
 
 interface Driver {
@@ -178,7 +180,8 @@ const HUB_WEATHER_DATA: Record<string, { temp: string; condition: string; wind: 
 };
 
 export default function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [currentView, setCurrentView] = useState<'landing' | 'app'>('landing');
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
   const [isGuest, setIsGuest] = useState<boolean>(false);
   const [loginEmail, setLoginEmail] = useState<string>('');
   const [loginPassword, setLoginPassword] = useState<string>('');
@@ -214,6 +217,29 @@ export default function App() {
   const [custDispatchFee, setCustDispatchFee] = useState<string>('7');
   const [custNeedsMcLease, setCustNeedsMcLease] = useState<boolean>(false);
   const [custMcLeaseFee, setCustMcLeaseFee] = useState<string>('20');
+
+  // Guest Service Signup & Agreement Form State
+  const [signupCompanyName, setSignupCompanyName] = useState<string>('');
+  const [signupContactName, setSignupContactName] = useState<string>('');
+  const [signupMcNumber, setSignupMcNumber] = useState<string>('');
+  const [signupPhone, setSignupPhone] = useState<string>('');
+  const [signupEmail, setSignupEmail] = useState<string>('');
+  const [signupTruckCount, setSignupTruckCount] = useState<string>('1');
+  const [signupServiceTier, setSignupServiceTier] = useState<'dispatch_only' | 'mc_lease_only' | 'mc_lease_dispatch'>('dispatch_only');
+  const [signupSignature, setSignupSignature] = useState<string>('');
+  const [signupSubmitted, setSignupSubmitted] = useState<boolean>(false);
+
+  // User Table Management State (Add, Edit, Delete)
+  const [editingUserId, setEditingUserId] = useState<number | string | null>(null);
+  const [editUserName, setEditUserName] = useState<string>('');
+  const [editUserEmail, setEditUserEmail] = useState<string>('');
+  const [editUserRole, setEditUserRole] = useState<string>('Dispatcher');
+  const [editUserStatus, setEditUserStatus] = useState<string>('Active');
+
+  const [newUserName, setNewUserName] = useState<string>('');
+  const [newUserEmail, setNewUserEmail] = useState<string>('');
+  const [newUserRole, setNewUserRole] = useState<string>('Dispatcher');
+  const [newUserStatus, setNewUserStatus] = useState<string>('Active');
 
   useEffect(() => {
     const bannerTimer = setInterval(() => {
@@ -330,6 +356,19 @@ export default function App() {
     setActiveTab('dashboard');
   };
 
+  // Helper function to calculate percentage fee based on rules
+  const calculateSignupFeePercentage = () => {
+    const tCount = parseInt(signupTruckCount) || 1;
+    if (signupServiceTier === 'dispatch_only') {
+      if (tCount === 1) return 8;
+      if (tCount > 5) return 5;
+      return 6; // >2 trucks
+    }
+    if (signupServiceTier === 'mc_lease_only') return 14;
+    if (signupServiceTier === 'mc_lease_dispatch') return 17;
+    return 7;
+  };
+
   const currentWeatherObj = HUB_WEATHER_DATA[selectedWeatherHub] || HUB_WEATHER_DATA['Chicago Hub'];
   const activeBanner = MARKETING_BANNERS[currentBannerIndex];
 
@@ -392,6 +431,23 @@ export default function App() {
         </div>
       </div>
     );
+  }
+  
+  if (currentView === 'landing') {
+    return (
+      <LandingPage 
+        onGuestLogin={() => {
+          setIsAuthenticated(true);
+          setIsGuest(true);
+          setCurrentView('app');
+        }}
+        onAccessCommandCenter={() => {
+          setIsAuthenticated(false);
+          setIsGuest(false);
+          setCurrentView('app');
+        }}
+      />
+    );  
   }
 
   return (
@@ -480,7 +536,7 @@ export default function App() {
             </p>
           </div>
 
-          <button onClick={() => { setIsAuthenticated(false); setIsGuest(false); }} style={{ background: '#ef4444', color: '#fff', border: 'none', width: '100%', padding: '10px', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '0.875rem', transition: 'background 0.2s' }}>
+          <button onClick={() => { setIsAuthenticated(false); setIsGuest(false); setCurrentView('landing'); }} style={{ background: '#ef4444', color: '#fff', border: 'none', width: '100%', padding: '10px', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '0.875rem', transition: 'background 0.2s' }}>
             Sign Out
           </button>
         </div>
@@ -602,110 +658,23 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Calculator Summary Results Cards */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', background: '#1f2937', padding: '16px', borderRadius: '8px', border: '1px solid #374151' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', background: '#1f2937', padding: '16px', borderRadius: '8px' }}>
                   <div>
-                    <span style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase' }}>Gross RPM</span>
-                    <div style={{ fontSize: '1.25rem', fontWeight: '700', color: Number(calculatedRpm) >= 2.5 ? '#4ade80' : '#facc15' }}>
-                      ${calculatedRpm}/mi
-                    </div>
+                    <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block' }}>Calculated RPM</span>
+                    <strong style={{ fontSize: '1.25rem', color: '#38bdf8' }}>${calculatedRpm}/mi</strong>
                   </div>
                   <div>
-                    <span style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase' }}>Estimated Fuel Cost</span>
-                    <div style={{ fontSize: '1.25rem', fontWeight: '700', color: '#38bdf8' }}>
-                      ${totalFuelCostCalc.toFixed(2)} ({totalFuelGallons.toFixed(1)} gal)
-                    </div>
+                    <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block' }}>Total Fuel Cost</span>
+                    <strong style={{ fontSize: '1.25rem', color: '#f87171' }}>${totalFuelCostCalc.toFixed(2)}</strong>
                   </div>
                   <div>
-                    <span style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase' }}>Total Expenses</span>
-                    <div style={{ fontSize: '1.25rem', fontWeight: '700', color: '#f87171' }}>
-                      ${totalExpenses.toFixed(2)}
-                    </div>
+                    <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block' }}>Net Profit</span>
+                    <strong style={{ fontSize: '1.25rem', color: '#4ade80' }}>${netProfitCalc.toFixed(2)}</strong>
                   </div>
                   <div>
-                    <span style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase' }}>Est. Net Profit</span>
-                    <div style={{ fontSize: '1.25rem', fontWeight: '700', color: netProfitCalc > 0 ? '#4ade80' : '#ef4444' }}>
-                      ${netProfitCalc.toFixed(2)} (${profitPerMile}/mi net)
-                    </div>
+                    <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block' }}>Net Profit / Mile</span>
+                    <strong style={{ fontSize: '1.25rem', color: '#facc15' }}>${profitPerMile}/mi</strong>
                   </div>
-                </div>
-              </div>
-
-              {/* Add New Load Form */}
-              <div style={{ background: '#111827', padding: '24px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: '600', margin: '0 0 16px 0', color: '#f8fafc' }}>Add New Load / Dispatch</h3>
-                <form onSubmit={(e) => {
-                  e.preventDefault();
-                  if (!newOrigin || !newDestination || !newRate || !newMiles) return;
-                  const newLoadItem: Load = {
-                    id: `TED-${Math.floor(1000 + Math.random() * 9000)}`,
-                    origin: newOrigin,
-                    destination: newDestination,
-                    driver: newDriver,
-                    rate: parseFloat(newRate),
-                    miles: parseFloat(newMiles),
-                    fuelCost: Math.round(parseFloat(newMiles) * 0.45),
-                    status: 'Pending',
-                    date: new Date().toISOString().split('T')[0],
-                    brokerName: newBroker || 'Direct Shipper'
-                  };
-                  setLoads([newLoadItem, ...loads]);
-                  setNewOrigin('');
-                  setNewDestination('');
-                  setNewRate('');
-                  setNewMiles('');
-                  setNewBroker('');
-                }} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
-                  <input type="text" placeholder="Origin (City, ST)" value={newOrigin} onChange={e => setNewOrigin(e.target.value)} required style={{ background: '#1f2937', border: '1px solid #374151', padding: '10px', borderRadius: '6px', color: '#fff' }} />
-                  <input type="text" placeholder="Destination (City, ST)" value={newDestination} onChange={e => setNewDestination(e.target.value)} required style={{ background: '#1f2937', border: '1px solid #374151', padding: '10px', borderRadius: '6px', color: '#fff' }} />
-                  <input type="number" placeholder="Rate ($)" value={newRate} onChange={e => setNewRate(e.target.value)} required style={{ background: '#1f2937', border: '1px solid #374151', padding: '10px', borderRadius: '6px', color: '#fff' }} />
-                  <input type="number" placeholder="Miles" value={newMiles} onChange={e => setNewMiles(e.target.value)} required style={{ background: '#1f2937', border: '1px solid #374151', padding: '10px', borderRadius: '6px', color: '#fff' }} />
-                  <input type="text" placeholder="Broker / Shipper Name" value={newBroker} onChange={e => setNewBroker(e.target.value)} style={{ background: '#1f2937', border: '1px solid #374151', padding: '10px', borderRadius: '6px', color: '#fff' }} />
-                  <select value={newDriver} onChange={e => setNewDriver(e.target.value)} style={{ background: '#1f2937', border: '1px solid #374151', padding: '10px', borderRadius: '6px', color: '#fff' }}>
-                    <option value="Unassigned">Unassigned</option>
-                    {drivers.map(d => <option key={d.id} value={d.name}>{d.name} ({d.truck})</option>)}
-                  </select>
-                  <button type="submit" style={{ background: '#2563eb', color: '#fff', border: 'none', padding: '10px', borderRadius: '6px', fontWeight: '600', cursor: 'pointer' }}>Create Load</button>
-                </form>
-              </div>
-
-              {/* Active Loads Table */}
-              <div style={{ background: '#111827', padding: '24px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: '600', margin: '0 0 16px 0', color: '#f8fafc' }}>Active Loads & RPM Tracker</h3>
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.875rem' }}>
-                    <thead>
-                      <tr style={{ borderBottom: '1px solid #374151', color: '#94a3b8' }}>
-                        <th style={{ padding: '10px' }}>Load ID</th>
-                        <th style={{ padding: '10px' }}>Broker / Shipper</th>
-                        <th style={{ padding: '10px' }}>Origin → Destination</th>
-                        <th style={{ padding: '10px' }}>Driver</th>
-                        <th style={{ padding: '10px' }}>Rate / Miles</th>
-                        <th style={{ padding: '10px' }}>RPM</th>
-                        <th style={{ padding: '10px' }}>Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {loads.filter(l => loadSearch === '' || l.id.toLowerCase().includes(loadSearch.toLowerCase())).map(load => {
-                        const rpm = (load.rate / (load.miles || 1)).toFixed(2);
-                        return (
-                          <tr key={load.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                            <td style={{ padding: '12px 10px', fontWeight: '600', color: '#38bdf8' }}>{load.id}</td>
-                            <td style={{ padding: '12px 10px' }}>{load.brokerName || 'Direct'}</td>
-                            <td style={{ padding: '12px 10px' }}>{load.origin} → {load.destination}</td>
-                            <td style={{ padding: '12px 10px' }}>{load.driver}</td>
-                            <td style={{ padding: '12px 10px' }}>${load.rate} / {load.miles}mi</td>
-                            <td style={{ padding: '12px 10px', color: Number(rpm) >= 2.5 ? '#4ade80' : '#facc15' }}>${rpm}/mi</td>
-                            <td style={{ padding: '12px 10px' }}>
-                              <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem', background: load.status === 'Delivered' ? 'rgba(74, 222, 128, 0.15)' : load.status === 'In Transit' ? 'rgba(56, 189, 248, 0.15)' : 'rgba(234, 179, 8, 0.15)', color: load.status === 'Delivered' ? '#4ade80' : load.status === 'In Transit' ? '#38bdf8' : '#facc15' }}>
-                                {load.status}
-                              </span>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
                 </div>
               </div>
             </div>
@@ -713,96 +682,36 @@ export default function App() {
 
           {activeTab === 'drivers' && (
             <div style={{ background: '#111827', padding: '24px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h3 style={{ color: '#ffffff', margin: 0 }}>Driver Roster & Hours of Service (HOS)</h3>
-                <button 
-                  onClick={() => {
-                    const name = prompt("Enter driver name:");
-                    const phone = prompt("Enter phone number:");
-                    const truck = prompt("Enter assigned truck:");
-                    const payPerMile = prompt("Enter pay per mile ($):");
-                    if (name && phone && truck && payPerMile) {
-                      const newDriver: Driver = {
-                        id: `DRV-${Date.now().toString().slice(-3)}`,
-                        name,
-                        phone,
-                        truck,
-                        payPerMile: parseFloat(payPerMile) || 0,
-                        status: 'Available',
-                        drivingHoursLeft: 11.0,
-                        shiftHoursLeft: 14.0,
-                        cycleHoursLeft: 70.0
-                      };
-                      setDrivers([...drivers, newDriver]);
-                    }
-                  }}
-                  style={{
-                    backgroundColor: '#3b82f6',
-                    color: '#ffffff',
-                    border: 'none',
-                    padding: '8px 16px',
-                    borderRadius: '6px',
-                    fontWeight: '500',
-                    cursor: 'pointer'
-                  }}
-                >
-                  + Add Driver
-                </button>
-              </div>
-
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', color: '#f3f4f6', textAlign: 'left', fontSize: '0.875rem' }}>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: '600', margin: '0 0 16px 0', color: '#f8fafc' }}>Driver Roster & HOS Status</h3>
+              <p style={{ color: '#94a3b8', fontSize: '0.875rem' }}>Monitor active driver statuses, contact details, and remaining hours of service.</p>
+              
+              <div style={{ overflowX: 'auto', marginTop: '16px' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.875rem' }}>
                   <thead>
                     <tr style={{ borderBottom: '1px solid #374151', color: '#94a3b8' }}>
-                      <th style={{ padding: '10px' }}>Driver ID</th>
-                      <th style={{ padding: '10px' }}>Name</th>
-                      <th style={{ padding: '10px' }}>Phone</th>
+                      <th style={{ padding: '10px' }}>Driver Name</th>
                       <th style={{ padding: '10px' }}>Truck</th>
-                      <th style={{ padding: '10px' }}>Pay / Mile</th>
+                      <th style={{ padding: '10px' }}>Phone</th>
                       <th style={{ padding: '10px' }}>Status</th>
-                      <th style={{ padding: '10px' }}>Drive Time Left</th>
-                      <th style={{ padding: '10px' }}>Actions</th>
+                      <th style={{ padding: '10px' }}>Drive Hours Left</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {drivers.map(d => (
-                      <tr key={d.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                        <td style={{ padding: '12px 10px', fontWeight: '600', color: '#38bdf8' }}>{d.id}</td>
-                        <td style={{ padding: '12px 10px' }}>{d.name}</td>
-                        <td style={{ padding: '12px 10px' }}>{d.phone}</td>
-                        <td style={{ padding: '12px 10px' }}>{d.truck}</td>
-                        <td style={{ padding: '12px 10px' }}>${d.payPerMile.toFixed(2)}</td>
+                    {drivers.map(drv => (
+                      <tr key={drv.id} style={{ borderBottom: '1px solid #1f2937' }}>
+                        <td style={{ padding: '12px 10px', color: '#fff', fontWeight: '500' }}>{drv.name}</td>
+                        <td style={{ padding: '12px 10px', color: '#cbd5e1' }}>{drv.truck}</td>
+                        <td style={{ padding: '12px 10px', color: '#cbd5e1' }}>{drv.phone}</td>
                         <td style={{ padding: '12px 10px' }}>
-                          <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem', background: d.status === 'Available' ? 'rgba(74, 222, 128, 0.15)' : d.status === 'On Route' ? 'rgba(56, 189, 248, 0.15)' : 'rgba(156, 163, 175, 0.15)', color: d.status === 'Available' ? '#4ade80' : d.status === 'On Route' ? '#38bdf8' : '#9ca3af' }}>
-                            {d.status}
+                          <span style={{ 
+                            background: drv.status === 'Available' ? 'rgba(74, 222, 128, 0.1)' : drv.status === 'On Route' ? 'rgba(56, 189, 248, 0.1)' : 'rgba(148, 163, 184, 0.1)',
+                            color: drv.status === 'Available' ? '#4ade80' : drv.status === 'On Route' ? '#38bdf8' : '#94a3b8',
+                            padding: '3px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: '600'
+                          }}>
+                            {drv.status}
                           </span>
                         </td>
-                        <td style={{ padding: '12px 10px' }}>{d.drivingHoursLeft} hrs</td>
-                        <td style={{ padding: '12px 10px', display: 'flex', gap: '8px' }}>
-                          <button 
-                            onClick={() => {
-                              const updatedName = prompt("Edit driver name:", d.name);
-                              const updatedPhone = prompt("Edit phone number:", d.phone);
-                              const updatedTruck = prompt("Edit assigned truck:", d.truck);
-                              if (updatedName && updatedPhone && updatedTruck) {
-                                setDrivers(drivers.map(item => item.id === d.id ? { ...item, name: updatedName, phone: updatedPhone, truck: updatedTruck } : item));
-                              }
-                            }}
-                            style={{ background: '#374151', color: '#fff', border: 'none', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem', cursor: 'pointer' }}
-                          >
-                            Edit
-                          </button>
-                          <button 
-                            onClick={() => {
-                              if (confirm(`Delete driver ${d.name}?`)) {
-                                setDrivers(drivers.filter(item => item.id !== d.id));
-                              }
-                            }}
-                            style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem', cursor: 'pointer' }}
-                          >
-                            Delete
-                          </button>
-                        </td>
+                        <td style={{ padding: '12px 10px', color: '#38bdf8', fontWeight: '600' }}>{drv.drivingHoursLeft} hrs</td>
                       </tr>
                     ))}
                   </tbody>
@@ -811,40 +720,77 @@ export default function App() {
             </div>
           )}
 
-          {activeTab === 'eld' && <EldComparison />}
+          {activeTab === 'eld' && (
+            <div style={{ background: '#111827', padding: '24px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: '600', margin: '0 0 16px 0', color: '#f8fafc' }}>ELD & Compliance Logs</h3>
+              <p style={{ color: '#94a3b8', fontSize: '0.875rem' }}>Real-time electronic logging device tracking for FMCSA compliance.</p>
+              
+              <div style={{ overflowX: 'auto', marginTop: '16px' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.875rem' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid #374151', color: '#94a3b8' }}>
+                      <th style={{ padding: '10px' }}>Driver</th>
+                      <th style={{ padding: '10px' }}>Current Duty Status</th>
+                      <th style={{ padding: '10px' }}>Drive Time Rem.</th>
+                      <th style={{ padding: '10px' }}>Duty Time Rem.</th>
+                      <th style={{ padding: '10px' }}>Cycle Rem.</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {eldRecords.map((eld, idx) => (
+                      <tr key={idx} style={{ borderBottom: '1px solid #1f2937' }}>
+                        <td style={{ padding: '12px 10px', color: '#fff', fontWeight: '500' }}>{eld.driverName}</td>
+                        <td style={{ padding: '12px 10px' }}>
+                          <span style={{ 
+                            background: eld.status === 'Driving' ? 'rgba(56, 189, 248, 0.1)' : eld.status === 'On Duty' ? 'rgba(250, 204, 21, 0.1)' : 'rgba(148, 163, 184, 0.1)',
+                            color: eld.status === 'Driving' ? '#38bdf8' : eld.status === 'On Duty' ? '#facc15' : '#94a3b8',
+                            padding: '3px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: '600'
+                          }}>
+                            {eld.status}
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px 10px', color: '#cbd5e1' }}>{eld.driveTimeRemaining} hrs</td>
+                        <td style={{ padding: '12px 10px', color: '#cbd5e1' }}>{eld.dutyTimeRemaining} hrs</td>
+                        <td style={{ padding: '12px 10px', color: '#cbd5e1' }}>{eld.cycleRemaining} hrs</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
           {activeTab === 'fuel' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               <div style={{ background: '#111827', padding: '24px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: '600', margin: '0 0 16px 0', color: '#f8fafc' }}>Live Fuel Prices & Nearby Stops</h3>
-                <div id="fuel-map-container" style={{ width: '100%', height: '400px', borderRadius: '8px', zIndex: 1 }}></div>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: '600', margin: '0 0 16px 0', color: '#f8fafc' }}>⛽ Live Fuel Stops & Station Finder</h3>
+                <p style={{ color: '#94a3b8', fontSize: '0.875rem', marginBottom: '16px' }}>Interactive map displaying nearby truck stops with live diesel prices.</p>
+                <div id="fuel-map-container" style={{ width: '100%', height: '350px', borderRadius: '8px', zIndex: 1 }}></div>
               </div>
 
               <div style={{ background: '#111827', padding: '24px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: '600', margin: '0 0 16px 0', color: '#f8fafc' }}>Fleet Fuel Logs</h3>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: '600', margin: '0 0 16px 0', color: '#f8fafc' }}>Fuel Purchase Logs</h3>
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.875rem' }}>
                     <thead>
                       <tr style={{ borderBottom: '1px solid #374151', color: '#94a3b8' }}>
-                        <th style={{ padding: '10px' }}>Entry ID</th>
+                        <th style={{ padding: '10px' }}>Date</th>
                         <th style={{ padding: '10px' }}>Driver</th>
                         <th style={{ padding: '10px' }}>Truck</th>
-                        <th style={{ padding: '10px' }}>Gallons</th>
-                        <th style={{ padding: '10px' }}>Total Cost</th>
                         <th style={{ padding: '10px' }}>Location</th>
-                        <th style={{ padding: '10px' }}>Date</th>
+                        <th style={{ padding: '10px' }}>Gallons</th>
+                        <th style={{ padding: '10px' }}>Cost</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {fuelEntries.map(f => (
-                        <tr key={f.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                          <td style={{ padding: '12px 10px', fontWeight: '600', color: '#38bdf8' }}>{f.id}</td>
-                          <td style={{ padding: '12px 10px' }}>{f.driverName}</td>
-                          <td style={{ padding: '12px 10px' }}>{f.truck}</td>
-                          <td style={{ padding: '12px 10px' }}>{f.gallons} gal</td>
-                          <td style={{ padding: '12px 10px', color: '#4ade80' }}>${f.cost}</td>
-                          <td style={{ padding: '12px 10px' }}>{f.location}</td>
-                          <td style={{ padding: '12px 10px' }}>{f.date}</td>
+                      {fuelEntries.map(fl => (
+                        <tr key={fl.id} style={{ borderBottom: '1px solid #1f2937' }}>
+                          <td style={{ padding: '12px 10px', color: '#cbd5e1' }}>{fl.date}</td>
+                          <td style={{ padding: '12px 10px', color: '#fff', fontWeight: '500' }}>{fl.driverName}</td>
+                          <td style={{ padding: '12px 10px', color: '#cbd5e1' }}>{fl.truck}</td>
+                          <td style={{ padding: '12px 10px', color: '#cbd5e1' }}>{fl.location}</td>
+                          <td style={{ padding: '12px 10px', color: '#38bdf8' }}>{fl.gallons} gal</td>
+                          <td style={{ padding: '12px 10px', color: '#f87171', fontWeight: '600' }}>${fl.cost.toFixed(2)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -856,145 +802,87 @@ export default function App() {
 
           {activeTab === 'financials' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              
-              {/* Manual Invoice Creator Widget */}
               <div style={{ background: '#111827', padding: '24px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: '600', margin: '0 0 16px 0', color: '#f8fafc' }}>➕ Create Manual Invoice / Dispatch Fee</h3>
-                <form onSubmit={(e) => {
-                  e.preventDefault();
-                  if (!invCarrierName || !invLoadRef || !invLoadRate) return;
-                  const rateNum = parseFloat(invLoadRate) || 0;
-                  const feePct = parseFloat(invFeePercent) || 7;
-                  const calculatedAmount = (rateNum * feePct) / 100;
-
-                  const newInvoiceItem: Invoice = {
-                    id: `INV-${Math.floor(3000 + Math.random() * 9000)}`,
-                    carrierName: invCarrierName,
-                    loadReference: invLoadRef,
-                    loadRate: rateNum,
-                    feePercentage: feePct,
-                    invoiceAmount: Number(calculatedAmount.toFixed(2)),
-                    status: 'Unpaid',
-                    created_at: new Date().toISOString().split('T')[0]
-                  };
-
-                  setInvoices([newInvoiceItem, ...invoices]);
-                  setInvCarrierName('');
-                  setInvLoadRef('');
-                  setInvLoadRate('');
-                }} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
-                  
+                <h3 style={{ fontSize: '1.1rem', fontWeight: '600', margin: '0 0 16px 0', color: '#f8fafc' }}>💰 Invoices & Dispatch Fees</h3>
+                <p style={{ color: '#94a3b8', fontSize: '0.875rem', marginBottom: '16px' }}>Generate and track carrier dispatch invoices.</p>
+                
+                {/* Manual Invoice Form */}
+                <div style={{ background: '#1f2937', padding: '16px', borderRadius: '8px', marginBottom: '20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', alignItems: 'end' }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '4px' }}>Customer / Carrier Name</label>
-                    <select 
-                      value={invCarrierName} 
-                      onChange={e => setInvCarrierName(e.target.value)} 
-                      required 
-                      style={{ width: '100%', background: '#1f2937', border: '1px solid #374151', padding: '10px', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }}
-                    >
-                      <option value="">Select Customer/Carrier</option>
-                      {customers.map(c => <option key={c.id} value={c.companyName}>{c.companyName}</option>)}
-                      <option value="TQL Logistics">TQL Logistics (Broker)</option>
-                      <option value="CH Robinson">CH Robinson (Broker)</option>
-                      <option value="Landstar">Landstar (Broker)</option>
-                    </select>
+                    <label style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '4px' }}>Carrier / Broker Name</label>
+                    <input type="text" value={invCarrierName} onChange={e => setInvCarrierName(e.target.value)} placeholder="e.g. TQL Logistics" style={{ width: '100%', background: '#111827', border: '1px solid #374151', padding: '8px', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }} />
                   </div>
-
                   <div>
                     <label style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '4px' }}>Load Reference ID</label>
-                    <input 
-                      type="text" 
-                      placeholder="e.g. TED-1004" 
-                      value={invLoadRef} 
-                      onChange={e => setInvLoadRef(e.target.value)} 
-                      required 
-                      style={{ width: '100%', background: '#1f2937', border: '1px solid #374151', padding: '10px', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }} 
-                    />
+                    <input type="text" value={invLoadRef} onChange={e => setInvLoadRef(e.target.value)} placeholder="e.g. TED-1004" style={{ width: '100%', background: '#111827', border: '1px solid #374151', padding: '8px', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }} />
                   </div>
-
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '4px' }}>Total Load Rate ($)</label>
-                    <input 
-                      type="number" 
-                      placeholder="2500" 
-                      value={invLoadRate} 
-                      onChange={e => setInvLoadRate(e.target.value)} 
-                      required 
-                      style={{ width: '100%', background: '#1f2937', border: '1px solid #374151', padding: '10px', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }} 
-                    />
+                    <label style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '4px' }}>Load Gross Rate ($)</label>
+                    <input type="number" value={invLoadRate} onChange={e => setInvLoadRate(e.target.value)} placeholder="2500" style={{ width: '100%', background: '#111827', border: '1px solid #374151', padding: '8px', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }} />
                   </div>
-
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '4px' }}>Fee Percentage (%)</label>
-                    <input 
-                      type="number" 
-                      step="0.1" 
-                      value={invFeePercent} 
-                      onChange={e => setInvFeePercent(e.target.value)} 
-                      required 
-                      style={{ width: '100%', background: '#1f2937', border: '1px solid #374151', padding: '10px', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }} 
-                    />
+                    <label style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '4px' }}>Dispatch Fee (%)</label>
+                    <input type="number" value={invFeePercent} onChange={e => setInvFeePercent(e.target.value)} style={{ width: '100%', background: '#111827', border: '1px solid #374151', padding: '8px', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }} />
                   </div>
+                  <button 
+                    onClick={() => {
+                      if (!invCarrierName || !invLoadRate) {
+                        alert('Please fill out carrier name and load rate.');
+                        return;
+                      }
+                      const rateNum = parseFloat(invLoadRate) || 0;
+                      const feePctNum = parseFloat(invFeePercent) || 7;
+                      const calculatedAmount = rateNum * (feePctNum / 100);
+                      const newInv: Invoice = {
+                        id: `INV-${Math.floor(1000 + Math.random() * 9000)}`,
+                        carrierName: invCarrierName,
+                        loadReference: invLoadRef || 'TED-GENERAL',
+                        loadRate: rateNum,
+                        feePercentage: feePctNum,
+                        invoiceAmount: calculatedAmount,
+                        status: 'Unpaid',
+                        created_at: new Date().toISOString().split('T')[0]
+                      };
+                      setInvoices([newInv, ...invoices]);
+                      setInvCarrierName('');
+                      setInvLoadRef('');
+                      setInvLoadRate('');
+                    }}
+                    style={{ background: '#2563eb', color: '#fff', border: 'none', padding: '9px 16px', borderRadius: '6px', fontWeight: '600', cursor: 'pointer', fontSize: '0.875rem' }}
+                  >
+                    Create Invoice
+                  </button>
+                </div>
 
-                  <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-                    <button type="submit" style={{ width: '100%', background: '#2563eb', color: '#fff', border: 'none', padding: '10px', borderRadius: '6px', fontWeight: '600', cursor: 'pointer' }}>
-                      Generate Invoice
-                    </button>
-                  </div>
-
-                </form>
-              </div>
-
-              {/* Invoices List Table */}
-              <div style={{ background: '#111827', padding: '24px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: '600', margin: '0 0 16px 0', color: '#f8fafc' }}>Invoices & Carrier Fees Ledger</h3>
+                {/* Invoices Table */}
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.875rem' }}>
                     <thead>
                       <tr style={{ borderBottom: '1px solid #374151', color: '#94a3b8' }}>
                         <th style={{ padding: '10px' }}>Invoice ID</th>
-                        <th style={{ padding: '10px' }}>Carrier / Customer</th>
+                        <th style={{ padding: '10px' }}>Carrier / Broker</th>
                         <th style={{ padding: '10px' }}>Load Ref</th>
                         <th style={{ padding: '10px' }}>Load Rate</th>
-                        <th style={{ padding: '10px' }}>Fee (%)</th>
-                        <th style={{ padding: '10px' }}>Invoice Amount</th>
+                        <th style={{ padding: '10px' }}>Fee Amount</th>
                         <th style={{ padding: '10px' }}>Status</th>
-                        <th style={{ padding: '10px' }}>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {invoices.map(inv => (
-                        <tr key={inv.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                          <td style={{ padding: '12px 10px', fontWeight: '600', color: '#38bdf8' }}>{inv.id}</td>
-                          <td style={{ padding: '12px 10px' }}>{inv.carrierName}</td>
-                          <td style={{ padding: '12px 10px' }}>{inv.loadReference}</td>
-                          <td style={{ padding: '12px 10px' }}>${inv.loadRate}</td>
-                          <td style={{ padding: '12px 10px' }}>{inv.feePercentage}%</td>
-                          <td style={{ padding: '12px 10px', color: '#4ade80', fontWeight: '600' }}>${inv.invoiceAmount}</td>
+                        <tr key={inv.id} style={{ borderBottom: '1px solid #1f2937' }}>
+                          <td style={{ padding: '12px 10px', color: '#38bdf8', fontWeight: '600' }}>{inv.id}</td>
+                          <td style={{ padding: '12px 10px', color: '#fff', fontWeight: '500' }}>{inv.carrierName}</td>
+                          <td style={{ padding: '12px 10px', color: '#cbd5e1' }}>{inv.loadReference}</td>
+                          <td style={{ padding: '12px 10px', color: '#cbd5e1' }}>${inv.loadRate.toFixed(2)}</td>
+                          <td style={{ padding: '12px 10px', color: '#4ade80', fontWeight: '600' }}>${inv.invoiceAmount.toFixed(2)} ({inv.feePercentage}%)</td>
                           <td style={{ padding: '12px 10px' }}>
-                            <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem', background: inv.status === 'Paid' ? 'rgba(74, 222, 128, 0.15)' : 'rgba(234, 179, 8, 0.15)', color: inv.status === 'Paid' ? '#4ade80' : '#facc15' }}>
+                            <span style={{ 
+                              background: inv.status === 'Paid' ? 'rgba(74, 222, 128, 0.1)' : 'rgba(250, 204, 21, 0.1)',
+                              color: inv.status === 'Paid' ? '#4ade80' : '#facc15',
+                              padding: '3px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: '600'
+                            }}>
                               {inv.status}
                             </span>
-                          </td>
-                          <td style={{ padding: '12px 10px', display: 'flex', gap: '8px' }}>
-                            <button 
-                              onClick={() => {
-                                setInvoices(invoices.map(item => item.id === inv.id ? { ...item, status: item.status === 'Paid' ? 'Unpaid' : 'Paid' } : item));
-                              }}
-                              style={{ background: '#374151', color: '#fff', border: 'none', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem', cursor: 'pointer' }}
-                            >
-                              Toggle Status
-                            </button>
-                            <button 
-                              onClick={() => {
-                                if (confirm(`Delete invoice ${inv.id}?`)) {
-                                  setInvoices(invoices.filter(item => item.id !== inv.id));
-                                }
-                              }}
-                              style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem', cursor: 'pointer' }}
-                            >
-                              Delete
-                            </button>
                           </td>
                         </tr>
                       ))}
@@ -1002,81 +890,395 @@ export default function App() {
                   </table>
                 </div>
               </div>
-
             </div>
           )}
 
-          {activeTab === 'tax' && <IftaAndDocuments />}
+          {activeTab === 'tax' && (
+            <div>
+              <IftaAndDocuments />
+            </div>
+          )}
 
           {activeTab === 'users' && (
             <div style={{ background: '#111827', padding: '24px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: '600', margin: 0, color: '#f8fafc' }}>Fleet Access Roles & Permissions</h3>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: '600', margin: '0 0 16px 0', color: '#f8fafc' }}>👥 Fleet Access Users & Roles Management</h3>
+              <p style={{ color: '#94a3b8', fontSize: '0.875rem', marginBottom: '16px' }}>Manage dispatchers, admins, and drivers with full CRUD capabilities.</p>
+
+              {/* Add User Form */}
+              <div style={{ background: '#1f2937', padding: '16px', borderRadius: '8px', marginBottom: '20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', alignItems: 'end' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '4px' }}>Full Name</label>
+                  <input type="text" value={newUserName} onChange={e => setNewUserName(e.target.value)} placeholder="e.g. Alex Smith" style={{ width: '100%', background: '#111827', border: '1px solid #374151', padding: '8px', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '4px' }}>Email Address</label>
+                  <input type="email" value={newUserEmail} onChange={e => setNewUserEmail(e.target.value)} placeholder="alex@truckingedge.com" style={{ width: '100%', background: '#111827', border: '1px solid #374151', padding: '8px', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '4px' }}>Role</label>
+                  <select value={newUserRole} onChange={e => setNewUserRole(e.target.value)} style={{ width: '100%', background: '#111827', border: '1px solid #374151', padding: '8px', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }}>
+                    <option value="Dispatcher">Dispatcher</option>
+                    <option value="Admin">Admin</option>
+                    <option value="Driver">Driver</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '4px' }}>Status</label>
+                  <select value={newUserStatus} onChange={e => setNewUserStatus(e.target.value)} style={{ width: '100%', background: '#111827', border: '1px solid #374151', padding: '8px', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }}>
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </div>
                 <button 
                   onClick={() => {
-                    const name = prompt("Enter user name:");
-                    const email = prompt("Enter user email:");
-                    const role = prompt("Enter user role (Admin, Dispatcher, Driver):", "Dispatcher");
-                    if (name && email) {
-                      const newUser: User = {
-                        id: `USR-${Date.now().toString().slice(-3)}`,
-                        name,
-                        email,
-                        role: role || 'Dispatcher',
-                        status: 'Active'
-                      };
-                      setUsers([...users, newUser]);
+                    if (!newUserName || !newUserEmail) {
+                      alert('Please enter user name and email.');
+                      return;
                     }
+                    const newUserObj: User = {
+                      id: Date.now(),
+                      name: newUserName,
+                      email: newUserEmail,
+                      role: newUserRole,
+                      status: newUserStatus
+                    };
+                    setUsers([...users, newUserObj]);
+                    setNewUserName('');
+                    setNewUserEmail('');
                   }}
-                  style={{ background: '#2563eb', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: '600', fontSize: '0.875rem', cursor: 'pointer' }}
+                  style={{ background: '#2563eb', color: '#fff', border: 'none', padding: '9px 16px', borderRadius: '6px', fontWeight: '600', cursor: 'pointer', fontSize: '0.875rem' }}
                 >
-                  + Add User
+                  Add User
                 </button>
               </div>
+
+              {/* Users Table */}
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.875rem' }}>
                   <thead>
                     <tr style={{ borderBottom: '1px solid #374151', color: '#94a3b8' }}>
-                      <th style={{ padding: '10px' }}>User ID</th>
                       <th style={{ padding: '10px' }}>Name</th>
                       <th style={{ padding: '10px' }}>Email</th>
                       <th style={{ padding: '10px' }}>Role</th>
                       <th style={{ padding: '10px' }}>Status</th>
-                      <th style={{ padding: '10px' }}>Actions</th>
+                      <th style={{ padding: '10px', textAlign: 'right' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {users.map(u => (
-                      <tr key={u.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                        <td style={{ padding: '12px 10px', fontWeight: '600', color: '#38bdf8' }}>{u.id}</td>
-                        <td style={{ padding: '12px 10px' }}>{u.name}</td>
-                        <td style={{ padding: '12px 10px' }}>{u.email}</td>
-                        <td style={{ padding: '12px 10px' }}>{u.role}</td>
+                    {users.map(u => {
+                      const isEditing = editingUserId === u.id;
+                      return (
+                        <tr key={u.id} style={{ borderBottom: '1px solid #1f2937' }}>
+                          <td style={{ padding: '12px 10px', color: '#fff' }}>
+                            {isEditing ? (
+                              <input type="text" value={editUserName} onChange={e => setEditUserName(e.target.value)} style={{ background: '#111827', border: '1px solid #374151', color: '#fff', padding: '4px 6px', borderRadius: '4px', width: '100%' }} />
+                            ) : (
+                              <strong>{u.name}</strong>
+                            )}
+                          </td>
+                          <td style={{ padding: '12px 10px', color: '#cbd5e1' }}>
+                            {isEditing ? (
+                              <input type="email" value={editUserEmail} onChange={e => setEditUserEmail(e.target.value)} style={{ background: '#111827', border: '1px solid #374151', color: '#fff', padding: '4px 6px', borderRadius: '4px', width: '100%' }} />
+                            ) : (
+                              u.email
+                            )}
+                          </td>
+                          <td style={{ padding: '12px 10px', color: '#cbd5e1' }}>
+                            {isEditing ? (
+                              <select value={editUserRole} onChange={e => setEditUserRole(e.target.value)} style={{ background: '#111827', border: '1px solid #374151', color: '#fff', padding: '4px 6px', borderRadius: '4px' }}>
+                                <option value="Dispatcher">Dispatcher</option>
+                                <option value="Admin">Admin</option>
+                                <option value="Driver">Driver</option>
+                              </select>
+                            ) : (
+                              u.role
+                            )}
+                          </td>
+                          <td style={{ padding: '12px 10px' }}>
+                            {isEditing ? (
+                              <select value={editUserStatus} onChange={e => setEditUserStatus(e.target.value)} style={{ background: '#111827', border: '1px solid #374151', color: '#fff', padding: '4px 6px', borderRadius: '4px' }}>
+                                <option value="Active">Active</option>
+                                <option value="Inactive">Inactive</option>
+                              </select>
+                            ) : (
+                              <span style={{ 
+                                background: u.status === 'Active' ? 'rgba(74, 222, 128, 0.1)' : 'rgba(148, 163, 184, 0.1)',
+                                color: u.status === 'Active' ? '#4ade80' : '#94a3b8',
+                                padding: '3px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: '600'
+                              }}>
+                                {u.status}
+                              </span>
+                            )}
+                          </td>
+                          <td style={{ padding: '12px 10px', textAlign: 'right' }}>
+                            {isEditing ? (
+                              <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                                <button 
+                                  onClick={() => {
+                                    setUsers(users.map(item => item.id === u.id ? { ...item, name: editUserName, email: editUserEmail, role: editUserRole, status: editUserStatus } : item));
+                                    setEditingUserId(null);
+                                  }}
+                                  style={{ background: '#16a34a', color: '#fff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: '600' }}
+                                >
+                                  Save
+                                </button>
+                                <button 
+                                  onClick={() => setEditingUserId(null)}
+                                  style={{ background: '#4b5563', color: '#fff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            ) : (
+                              <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                                <button 
+                                  onClick={() => {
+                                    setEditingUserId(u.id);
+                                    setEditUserName(u.name);
+                                    setEditUserEmail(u.email);
+                                    setEditUserRole(u.role);
+                                    setEditUserStatus(u.status);
+                                  }}
+                                  style={{ background: '#374151', color: '#38bdf8', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: '600' }}
+                                >
+                                  Edit
+                                </button>
+                                <button 
+                                  onClick={() => {
+                                    if (confirm(`Are you sure you want to delete ${u.name}?`)) {
+                                      setUsers(users.filter(item => item.id !== u.id));
+                                    }
+                                  }}
+                                  style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: '600' }}
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'customers' && (
+            <div style={{ background: '#111827', padding: '24px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: '600', margin: '0 0 16px 0', color: '#f8fafc' }}>🤝 Customer & MC Lease Client Management</h3>
+              <p style={{ color: '#94a3b8', fontSize: '0.875rem', marginBottom: '16px' }}>Manage motor carrier clients, dispatch service agreements, and MC leasing programs.</p>
+
+              {/* Conditional View for Guest vs Admin */}
+              {isGuest ? (
+                <div style={{ background: '#1f2937', padding: '24px', borderRadius: '8px', border: '1px solid #374151', marginBottom: '24px' }}>
+                  <h4 style={{ margin: '0 0 8px 0', fontSize: '1rem', color: '#38bdf8', fontWeight: '600' }}>📋 Professional Service Signup & Agreement Form</h4>
+                  <p style={{ margin: '0 0 20px 0', fontSize: '0.813rem', color: '#94a3b8' }}>
+                    Select your preferred service tier and fleet size below. Your service fee is calculated automatically according to our tiered rate structure. Note: ELD and insurance charges are paid separately.
+                  </p>
+
+                  {signupSubmitted ? (
+                    <div style={{ background: 'rgba(74, 222, 128, 0.1)', border: '1px solid #4ade80', padding: '20px', borderRadius: '8px', textAlign: 'center' }}>
+                      <h4 style={{ color: '#4ade80', margin: '0 0 8px 0' }}>🎉 Agreement Submitted Successfully!</h4>
+                      <p style={{ color: '#cbd5e1', fontSize: '0.875rem', margin: '0 0 16px 0' }}>
+                        Thank you, {signupCompanyName}. Your agreement for <strong>{signupServiceTier === 'dispatch_only' ? 'Dispatch Only' : signupServiceTier === 'mc_lease_only' ? 'MC Lease Only' : 'MC Lease + Dispatch'}</strong> has been registered at a rate of <strong>{calculateSignupFeePercentage()}%</strong>. Our onboarding team will contact you shortly.
+                      </p>
+                      <button 
+                        onClick={() => setSignupSubmitted(false)}
+                        style={{ background: '#2563eb', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontSize: '0.813rem', fontWeight: '600', cursor: 'pointer' }}
+                      >
+                        Submit Another Agreement
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '4px' }}>Company Name</label>
+                          <input type="text" value={signupCompanyName} onChange={e => setSignupCompanyName(e.target.value)} placeholder="Apex Transport" style={{ width: '100%', background: '#111827', border: '1px solid #374151', padding: '9px', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }} />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '4px' }}>Contact Name</label>
+                          <input type="text" value={signupContactName} onChange={e => setSignupContactName(e.target.value)} placeholder="John Doe" style={{ width: '100%', background: '#111827', border: '1px solid #374151', padding: '9px', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }} />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '4px' }}>MC Number</label>
+                          <input type="text" value={signupMcNumber} onChange={e => setSignupMcNumber(e.target.value)} placeholder="MC-123456" style={{ width: '100%', background: '#111827', border: '1px solid #374151', padding: '9px', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }} />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '4px' }}>Phone Number</label>
+                          <input type="text" value={signupPhone} onChange={e => setSignupPhone(e.target.value)} placeholder="(555) 000-0000" style={{ width: '100%', background: '#111827', border: '1px solid #374151', padding: '9px', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }} />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '4px' }}>Email Address</label>
+                          <input type="email" value={signupEmail} onChange={e => setSignupEmail(e.target.value)} placeholder="dispatch@client.com" style={{ width: '100%', background: '#111827', border: '1px solid #374151', padding: '9px', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }} />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '4px' }}>Fleet Size (Number of Trucks)</label>
+                          <input type="number" min="1" value={signupTruckCount} onChange={e => setSignupTruckCount(e.target.value)} style={{ width: '100%', background: '#111827', border: '1px solid #374151', padding: '9px', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }} />
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginTop: '4px' }}>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '4px' }}>Preferred Service Tier</label>
+                          <select value={signupServiceTier} onChange={e => setSignupServiceTier(e.target.value as any)} style={{ width: '100%', background: '#111827', border: '1px solid #374151', padding: '9px', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }}>
+                            <option value="dispatch_only">Dispatch Only (Truck-based tier)</option>
+                            <option value="mc_lease_only">MC Lease Only (14%)</option>
+                            <option value="mc_lease_dispatch">MC Lease + Dispatch Included (17%)</option>
+                          </select>
+                        </div>
+                        <div style={{ background: '#111827', padding: '12px 16px', borderRadius: '6px', border: '1px solid #374151', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                          <span style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '600' }}>Automatically Calculated Percentage</span>
+                          <strong style={{ fontSize: '1.4rem', color: '#4ade80', marginTop: '2px' }}>{calculateSignupFeePercentage()}% Fee</strong>
+                        </div>
+                      </div>
+
+                      <div style={{ marginTop: '8px' }}>
+                        <label style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '4px' }}>Authorized Signature (Type Full Legal Name)</label>
+                        <input type="text" value={signupSignature} onChange={e => setSignupSignature(e.target.value)} placeholder="e.g. John Doe (Authorized Officer)" style={{ width: '100%', background: '#111827', border: '1px solid #374151', padding: '9px', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }} />
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
+                        <button 
+                          onClick={() => {
+                            if (!signupCompanyName || !signupMcNumber || !signupSignature) {
+                              alert('Please fill out your company name, MC number, and authorized signature.');
+                              return;
+                            }
+                            const newCust: CustomerClient = {
+                              id: `CUST-${Math.floor(100 + Math.random() * 900)}`,
+                              companyName: signupCompanyName,
+                              contactName: signupContactName || 'Authorized Signatory',
+                              mcNumber: signupMcNumber,
+                              phone: signupPhone || '(555) 000-0000',
+                              email: signupEmail || 'carrier@client.com',
+                              dispatchFeePercent: calculateSignupFeePercentage(),
+                              needsMcLease: signupServiceTier !== 'dispatch_only',
+                              mcLeaseFeePercent: signupServiceTier !== 'dispatch_only' ? calculateSignupFeePercentage() : 0,
+                              status: 'Pending Verification',
+                              created_at: new Date().toISOString().split('T')[0]
+                            };
+                            setCustomers([newCust, ...customers]);
+                            setSignupSubmitted(true);
+                          }}
+                          style={{ background: '#2563eb', color: '#fff', border: 'none', padding: '11px 24px', borderRadius: '6px', fontWeight: '600', cursor: 'pointer', fontSize: '0.875rem' }}
+                        >
+                          Sign & Submit Service Agreement
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* Add Customer Form for Admins */
+                <div style={{ background: '#1f2937', padding: '16px', borderRadius: '8px', marginBottom: '20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', alignItems: 'end' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '4px' }}>Company Name</label>
+                    <input type="text" value={custCompanyName} onChange={e => setCustCompanyName(e.target.value)} placeholder="Apex Transport" style={{ width: '100%', background: '#111827', border: '1px solid #374151', padding: '8px', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '4px' }}>Contact Name</label>
+                    <input type="text" value={custContactName} onChange={e => setCustContactName(e.target.value)} placeholder="John Doe" style={{ width: '100%', background: '#111827', border: '1px solid #374151', padding: '8px', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '4px' }}>MC Number</label>
+                    <input type="text" value={custMcNumber} onChange={e => setCustMcNumber(e.target.value)} placeholder="MC-123456" style={{ width: '100%', background: '#111827', border: '1px solid #374151', padding: '8px', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '4px' }}>Phone</label>
+                    <input type="text" value={custPhone} onChange={e => setCustPhone(e.target.value)} placeholder="(555) 000-0000" style={{ width: '100%', background: '#111827', border: '1px solid #374151', padding: '8px', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '4px' }}>Email</label>
+                    <input type="email" value={custEmail} onChange={e => setCustEmail(e.target.value)} placeholder="dispatch@client.com" style={{ width: '100%', background: '#111827', border: '1px solid #374151', padding: '8px', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '4px' }}>Dispatch Fee (%)</label>
+                    <input type="number" value={custDispatchFee} onChange={e => setCustDispatchFee(e.target.value)} style={{ width: '100%', background: '#111827', border: '1px solid #374151', padding: '8px', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }} />
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingBottom: '8px' }}>
+                    <input type="checkbox" id="mcLeaseCheck" checked={custNeedsMcLease} onChange={e => setCustNeedsMcLease(e.target.checked)} style={{ width: '16px', height: '16px' }} />
+                    <label htmlFor="mcLeaseCheck" style={{ fontSize: '0.75rem', color: '#cbd5e1', cursor: 'pointer' }}>Needs MC Lease Program</label>
+                  </div>
+                  {custNeedsMcLease && (
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '4px' }}>MC Lease Fee (%)</label>
+                      <input type="number" value={custMcLeaseFee} onChange={e => setCustMcLeaseFee(e.target.value)} style={{ width: '100%', background: '#111827', border: '1px solid #374151', padding: '8px', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }} />
+                    </div>
+                  )}
+                  <button 
+                    onClick={() => {
+                      if (!custCompanyName || !custMcNumber) {
+                        alert('Please provide company name and MC number.');
+                        return;
+                      }
+                      const newCust: CustomerClient = {
+                        id: `CUST-${Math.floor(100 + Math.random() * 900)}`,
+                        companyName: custCompanyName,
+                        contactName: custContactName || 'Primary Contact',
+                        mcNumber: custMcNumber,
+                        phone: custPhone || '(555) 000-0000',
+                        email: custEmail || 'client@domain.com',
+                        dispatchFeePercent: parseFloat(custDispatchFee) || 7,
+                        needsMcLease: custNeedsMcLease,
+                        mcLeaseFeePercent: custNeedsMcLease ? parseFloat(custMcLeaseFee) || 20 : 0,
+                        status: 'Active',
+                        created_at: new Date().toISOString().split('T')[0]
+                      };
+                      setCustomers([newCust, ...customers]);
+                      setCustCompanyName('');
+                      setCustContactName('');
+                      setCustMcNumber('');
+                      setCustPhone('');
+                      setCustEmail('');
+                      setCustNeedsMcLease(false);
+                    }}
+                    style={{ background: '#2563eb', color: '#fff', border: 'none', padding: '9px 16px', borderRadius: '6px', fontWeight: '600', cursor: 'pointer', fontSize: '0.875rem' }}
+                  >
+                    Add Customer
+                  </button>
+                </div>
+              )}
+
+              {/* Customers Table */}
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.875rem' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid #374151', color: '#94a3b8' }}>
+                      <th style={{ padding: '10px' }}>Company Name</th>
+                      <th style={{ padding: '10px' }}>MC Number</th>
+                      <th style={{ padding: '10px' }}>Contact</th>
+                      <th style={{ padding: '10px' }}>Dispatch Fee</th>
+                      <th style={{ padding: '10px' }}>MC Lease Status</th>
+                      <th style={{ padding: '10px', textAlign: 'right' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {customers.map(c => (
+                      <tr key={c.id} style={{ borderBottom: '1px solid #1f2937' }}>
+                        <td style={{ padding: '12px 10px', color: '#fff', fontWeight: '600' }}>{c.companyName}</td>
+                        <td style={{ padding: '12px 10px', color: '#38bdf8' }}>{c.mcNumber}</td>
+                        <td style={{ padding: '12px 10px', color: '#cbd5e1' }}>{c.contactName} ({c.phone})</td>
+                        <td style={{ padding: '12px 10px', color: '#4ade80' }}>{c.dispatchFeePercent}%</td>
                         <td style={{ padding: '12px 10px' }}>
-                          <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem', background: 'rgba(74, 222, 128, 0.15)', color: '#4ade80' }}>
-                            {u.status}
-                          </span>
+                          {c.needsMcLease ? (
+                            <span style={{ background: 'rgba(250, 204, 21, 0.1)', color: '#facc15', padding: '3px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: '600' }}>
+                              Leased ({c.mcLeaseFeePercent}%)
+                            </span>
+                          ) : (
+                            <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Own MC</span>
+                          )}
                         </td>
-                        <td style={{ padding: '12px 10px', display: 'flex', gap: '8px' }}>
+                        <td style={{ padding: '12px 10px', textAlign: 'right' }}>
                           <button 
                             onClick={() => {
-                              const updatedName = prompt("Edit user name:", u.name);
-                              const updatedEmail = prompt("Edit user email:", u.email);
-                              if (updatedName && updatedEmail) {
-                                setUsers(users.map(item => item.id === u.id ? { ...item, name: updatedName, email: updatedEmail } : item));
+                              if (confirm(`Remove customer ${c.companyName}?`)) {
+                                setCustomers(customers.filter(item => item.id !== c.id));
                               }
                             }}
-                            style={{ background: '#374151', color: '#fff', border: 'none', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem', cursor: 'pointer' }}
-                          >
-                            Edit
-                          </button>
-                          <button 
-                            onClick={() => {
-                              if (confirm(`Delete user ${u.name}?`)) {
-                                setUsers(users.filter(item => item.id !== u.id));
-                              }
-                            }}
-                            style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem', cursor: 'pointer' }}
+                            style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: '600' }}
                           >
                             Delete
                           </button>
@@ -1086,196 +1288,6 @@ export default function App() {
                   </tbody>
                 </table>
               </div>
-            </div>
-          )}
-
-          {activeTab === 'customers' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              
-              {/* Manual Customer Creation Widget */}
-              <div style={{ background: '#111827', padding: '24px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: '600', margin: '0 0 16px 0', color: '#f8fafc' }}>➕ Register New Customer / Carrier Manually</h3>
-                <form onSubmit={(e) => {
-                  e.preventDefault();
-                  if (!custCompanyName || !custMcNumber) return;
-
-                  const newCustItem: CustomerClient = {
-                    id: `CUST-${Math.floor(500 + Math.random() * 900)}`,
-                    companyName: custCompanyName,
-                    contactName: custContactName || 'N/A',
-                    mcNumber: custMcNumber,
-                    phone: custPhone || '(555) 000-0000',
-                    email: custEmail || 'contact@carrier.com',
-                    dispatchFeePercent: parseFloat(custDispatchFee) || 7,
-                    needsMcLease: custNeedsMcLease,
-                    mcLeaseFeePercent: custNeedsMcLease ? (parseFloat(custMcLeaseFee) || 20) : 0,
-                    status: 'Active',
-                    created_at: new Date().toISOString().split('T')[0]
-                  };
-
-                  setCustomers([newCustItem, ...customers]);
-                  setCustCompanyName('');
-                  setCustContactName('');
-                  setCustMcNumber('');
-                  setCustPhone('');
-                  setCustEmail('');
-                  setCustDispatchFee('7');
-                  setCustNeedsMcLease(false);
-                  setCustMcLeaseFee('20');
-                }} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
-                  
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '4px' }}>Company Name</label>
-                    <input 
-                      type="text" 
-                      placeholder="e.g. Swift Logistics LLC" 
-                      value={custCompanyName} 
-                      onChange={e => setCustCompanyName(e.target.value)} 
-                      required 
-                      style={{ width: '100%', background: '#1f2937', border: '1px solid #374151', padding: '10px', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }} 
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '4px' }}>Contact Name</label>
-                    <input 
-                      type="text" 
-                      placeholder="e.g. John Doe" 
-                      value={custContactName} 
-                      onChange={e => setCustContactName(e.target.value)} 
-                      style={{ width: '100%', background: '#1f2937', border: '1px solid #374151', padding: '10px', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }} 
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '4px' }}>MC Number / USDOT</label>
-                    <input 
-                      type="text" 
-                      placeholder="e.g. MC-123456" 
-                      value={custMcNumber} 
-                      onChange={e => setCustMcNumber(e.target.value)} 
-                      required 
-                      style={{ width: '100%', background: '#1f2937', border: '1px solid #374151', padding: '10px', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }} 
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '4px' }}>Phone Number</label>
-                    <input 
-                      type="text" 
-                      placeholder="(555) 123-4567" 
-                      value={custPhone} 
-                      onChange={e => setCustPhone(e.target.value)} 
-                      style={{ width: '100%', background: '#1f2937', border: '1px solid #374151', padding: '10px', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }} 
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '4px' }}>Email Address</label>
-                    <input 
-                      type="email" 
-                      placeholder="dispatcher@company.com" 
-                      value={custEmail} 
-                      onChange={e => setCustEmail(e.target.value)} 
-                      style={{ width: '100%', background: '#1f2937', border: '1px solid #374151', padding: '10px', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }} 
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '4px' }}>Dispatch Fee (%)</label>
-                    <input 
-                      type="number" 
-                      step="0.1" 
-                      value={custDispatchFee} 
-                      onChange={e => setCustDispatchFee(e.target.value)} 
-                      required 
-                      style={{ width: '100%', background: '#1f2937', border: '1px solid #374151', padding: '10px', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }} 
-                    />
-                  </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#cbd5e1', cursor: 'pointer', marginTop: '16px' }}>
-                      <input 
-                        type="checkbox" 
-                        checked={custNeedsMcLease} 
-                        onChange={e => setCustNeedsMcLease(e.target.checked)} 
-                        style={{ width: '16px', height: '16px', accentColor: '#2563eb' }}
-                      />
-                      Needs MC Lease / Rent Program
-                    </label>
-                  </div>
-
-                  {custNeedsMcLease && (
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '4px' }}>MC Lease Fee (%)</label>
-                      <input 
-                        type="number" 
-                        step="0.1" 
-                        value={custMcLeaseFee} 
-                        onChange={e => setCustMcLeaseFee(e.target.value)} 
-                        style={{ width: '100%', background: '#1f2937', border: '1px solid #374151', padding: '10px', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }} 
-                      />
-                    </div>
-                  )}
-
-                  <div style={{ display: 'flex', alignItems: 'flex-end', gridColumn: '1 / -1' }}>
-                    <button type="submit" style={{ width: '100%', background: '#2563eb', color: '#fff', border: 'none', padding: '11px', borderRadius: '6px', fontWeight: '600', cursor: 'pointer' }}>
-                      Add Customer to Roster
-                    </button>
-                  </div>
-
-                </form>
-              </div>
-
-              {/* Customer Roster Table */}
-              <div style={{ background: '#111827', padding: '24px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: '600', margin: '0 0 16px 0', color: '#f8fafc' }}>Customer & MC Lease Management</h3>
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.875rem' }}>
-                    <thead>
-                      <tr style={{ borderBottom: '1px solid #374151', color: '#94a3b8' }}>
-                        <th style={{ padding: '10px' }}>ID</th>
-                        <th style={{ padding: '10px' }}>Company Name</th>
-                        <th style={{ padding: '10px' }}>Contact</th>
-                        <th style={{ padding: '10px' }}>MC Number</th>
-                        <th style={{ padding: '10px' }}>Phone / Email</th>
-                        <th style={{ padding: '10px' }}>Dispatch Fee</th>
-                        <th style={{ padding: '10px' }}>MC Lease</th>
-                        <th style={{ padding: '10px' }}>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {customers.map(c => (
-                        <tr key={c.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                          <td style={{ padding: '12px 10px', fontWeight: '600', color: '#38bdf8' }}>{c.id}</td>
-                          <td style={{ padding: '12px 10px', fontWeight: '600' }}>{c.companyName}</td>
-                          <td style={{ padding: '12px 10px' }}>{c.contactName}</td>
-                          <td style={{ padding: '12px 10px', color: '#facc15' }}>{c.mcNumber}</td>
-                          <td style={{ padding: '12px 10px' }}>
-                            <div style={{ fontSize: '0.85rem' }}>{c.phone}</div>
-                            <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{c.email}</div>
-                          </td>
-                          <td style={{ padding: '12px 10px' }}>{c.dispatchFeePercent}%</td>
-                          <td style={{ padding: '12px 10px' }}>{c.needsMcLease ? `Yes (${c.mcLeaseFeePercent}%)` : 'No'}</td>
-                          <td style={{ padding: '12px 10px' }}>
-                            <button 
-                              onClick={() => {
-                                if (confirm(`Delete customer ${c.companyName}?`)) {
-                                  setCustomers(customers.filter(item => item.id !== c.id));
-                                }
-                              }}
-                              style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem', cursor: 'pointer' }}
-                            >
-                              Delete
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
             </div>
           )}
 

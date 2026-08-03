@@ -46,7 +46,6 @@ export const LoadBoardIntegrationPage: React.FC = () => {
     setTimeout(() => setBookedMessage(null), 4000);
   };
 
-  // Filter loads based on user search input
   const filteredLoads = publicLoads.filter(load => {
     const matchesOrigin = load.origin.toLowerCase().includes(searchOrigin.toLowerCase());
     const matchesDestination = load.destination.toLowerCase().includes(searchDestination.toLowerCase());

@@ -7,4 +7,13 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  server: {
+    proxy: {
+      '/api/fmcsa': {
+        target: 'https://mobile.fmcsa.dot.gov',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/fmcsa/, '/qc/services'),
+      },
+    },
+  },
 })

@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 
 export const SettingsPage: React.FC = () => {
-  const [companyName, setCompanyName] = useState('Trucking Edge Logistics');
-  const [email, setEmail] = useState('dispatch@truckingedge.com');
-  const [selectedPlan, setSelectedPlan] = useState('Professional');
+  const [role, setRole] = useState<'Fleet Owner' | 'Dispatcher' | 'Safety Manager' | 'Accounting'>('Fleet Owner');
+  const [autoDispatch, setAutoDispatch] = useState(true);
+  const [smsVerification, setSmsVerification] = useState(false);
+  const [geofenceRadius, setGeofenceRadius] = useState('15');
+  const [complianceLockout, setComplianceLockout] = useState(true);
   const [saved, setSaved] = useState(false);
 
   const handleSave = (e: React.FormEvent) => {
@@ -12,78 +14,63 @@ export const SettingsPage: React.FC = () => {
     setTimeout(() => setSaved(false), 3000);
   };
 
-  const plans = [
-    { name: 'Starter', price: '$29/mo', desc: 'Basic load tracking & single truck management.' },
-    { name: 'Professional', price: '$79/mo', desc: 'Full multi-truck fleet management, ELD logs, & free public board search.' },
-    { name: 'Enterprise', price: '$149/mo', desc: 'Unlimited API load board streams (DAT/Truckstop), custom analytics, & priority support.' },
-  ];
-
   return (
-    <div style={{ color: '#f8fafc', maxWidth: '900px' }}>
-      <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '8px' }}>Application Settings & Subscription Billing</h2>
-      <p style={{ color: '#94a3b8', marginBottom: '24px' }}>Manage your company profile, account security, and active software subscription tier.</p>
+    <div style={{ padding: '24px', color: '#f8fafc', maxWidth: '800px' }}>
+      <h2 style={{ fontSize: '1.8rem', fontWeight: 'bold', marginBottom: '8px' }}>Master Settings & Role Controls</h2>
+      <p style={{ color: '#94a3b8', marginBottom: '24px' }}>Configure operational parameters and system-wide automation rules based on user roles.</p>
 
       {saved && (
-        <div style={{ padding: '12px 16px', background: '#065f46', color: '#fff', borderRadius: '8px', marginBottom: '20px', fontWeight: 'bold' }}>
-          Settings and subscription updated successfully!
+        <div style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid #10b981', color: '#34d399', padding: '12px', borderRadius: '8px', marginBottom: '20px' }}>
+          ✓ Settings updated successfully!
         </div>
       )}
 
-      {/* Subscription Billing Section */}
-      <div style={{ background: '#090d16', padding: '24px', borderRadius: '12px', border: '1px solid #1e293b', marginBottom: '24px' }}>
-        <h3 style={{ fontSize: '1.1rem', fontWeight: '600', color: '#38bdf8', marginBottom: '16px' }}>Subscription Billing Packages</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
-          {plans.map((p) => {
-            const isCurrent = selectedPlan === p.name;
-            return (
-              <div 
-                key={p.name} 
-                style={{ background: '#020617', border: isCurrent ? '2px solid #6366f1' : '1px solid #1e293b', padding: '20px', borderRadius: '8px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
-              >
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <h4 style={{ fontSize: '1rem', fontWeight: 'bold', color: '#fff' }}>{p.name}</h4>
-                    <span style={{ fontSize: '1rem', fontWeight: 'bold', color: '#4ade80' }}>{p.price}</span>
-                  </div>
-                  <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: '16px' }}>{p.desc}</p>
-                </div>
-                <button 
-                  onClick={() => setSelectedPlan(p.name)}
-                  style={{ background: isCurrent ? '#6366f1' : '#1e293b', color: '#fff', border: 'none', padding: '10px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.85Port' }}
-                >
-                  {isCurrent ? 'Active Plan' : 'Select Plan'}
-                </button>
-              </div>
-            );
-          })}
+      <form onSubmit={handleSave} style={{ background: '#090d16', border: '1px solid #1e293b', borderRadius: '12px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        
+        {/* Role Selector */}
+        <div>
+          <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 'bold', marginBottom: '8px' }}>Active System Role</label>
+          <select value={role} onChange={(e: any) => setRole(e.target.value)} style={{ width: '100%', padding: '10px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff' }}>
+            <option value="Fleet Owner">Fleet Owner</option>
+            <option value="Dispatcher">Dispatcher</option>
+            <option value="Safety Manager">Safety Manager</option>
+            <option value="Accounting">Accounting</option>
+          </select>
         </div>
-      </div>
 
-      {/* General Settings Form */}
-      <form onSubmit={handleSave} style={{ background: '#090d16', padding: '24px', borderRadius: '12px', border: '1px solid #1e293b' }}>
-        <h3 style={{ fontSize: '1.1rem', fontWeight: '600', color: '#38bdf8', marginBottom: '16px' }}>Company Profile Settings</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '20px' }}>
+        {/* Toggles */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #1e293b', paddingTop: '16px' }}>
           <div>
-            <label style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: '6px' }}>Company Name</label>
-            <input 
-              type="text" 
-              value={companyName} 
-              onChange={(e) => setCompanyName(e.target.value)} 
-              style={{ width: '100%', padding: '12px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff' }} 
-            />
+            <div style={{ fontWeight: 'bold' }}>Automated Dispatch Assignment</div>
+            <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Automatically assign available loads to drivers matching route profiles.</div>
           </div>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: '6px' }}>Billing Notification Email</label>
-            <input 
-              type="email" 
-              value={email} 
-              onChange={(e) => setEmail(e.target.value)} 
-              style={{ width: '100%', padding: '12px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff' }} 
-            />
-          </div>
+          <input type="checkbox" checked={autoDispatch} onChange={(e) => setAutoDispatch(e.target.checked)} style={{ width: '20px', height: '20px', cursor: 'pointer' }} />
         </div>
-        <button type="submit" style={{ background: '#6366f1', color: '#fff', border: 'none', padding: '12px 24px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>
-          Save Changes
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #1e293b', paddingTop: '16px' }}>
+          <div>
+            <div style={{ fontWeight: 'bold' }}>Require SMS Security Verification</div>
+            <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Prompt multi-factor authentication for high-value settlement changes.</div>
+          </div>
+          <input type="checkbox" checked={smsVerification} onChange={(e) => setSmsVerification(e.target.checked)} style={{ width: '20px', height: '20px', cursor: 'pointer' }} />
+        </div>
+
+        {/* Radius Input */}
+        <div style={{ borderTop: '1px solid #1e293b', paddingTop: '16px' }}>
+          <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 'bold', marginBottom: '6px' }}>Geofence Alert Radius (Miles)</label>
+          <input type="number" value={geofenceRadius} onChange={(e) => setGeofenceRadius(e.target.value)} style={{ width: '100%', padding: '10px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff' }} />
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #1e293b', paddingTop: '16px' }}>
+          <div>
+            <div style={{ fontWeight: 'bold' }}>Strict ELD Compliance Lockout</div>
+            <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Prevent load dispatching if driver HOS limits are reached.</div>
+          </div>
+          <input type="checkbox" checked={complianceLockout} onChange={(e) => setComplianceLockout(e.target.checked)} style={{ width: '20px', height: '20px', cursor: 'pointer' }} />
+        </div>
+
+        <button type="submit" style={{ marginTop: '10px', background: '#6366f1', color: '#fff', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
+          Save Configuration
         </button>
       </form>
     </div>

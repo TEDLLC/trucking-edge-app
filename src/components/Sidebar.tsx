@@ -12,8 +12,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
     { id: 'eld', label: 'ELD / HOS Logs', icon: '📋' },
     { id: 'fuel', label: 'Fuel Map & Logs', icon: '⛽' },
     { id: 'financials', label: 'Profit & Loss', icon: '💰' },
-    { id: 'settings', label: 'Load Board Settings', icon: '⚙️' },
     { id: 'loadboards', label: 'Load Boards & APIs', icon: '🌐' },
+    { id: 'settings', label: 'Master Settings', icon: '⚙️' },
+    { id: 'billing', label: 'Billing & Payments', icon: '💳' },
+    { id: 'support', label: 'Support & FAQ', icon: '❓' },
   ];
 
   return (
@@ -23,7 +25,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
         <span style={{ fontSize: '0.75rem', color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '1px' }}>Enterprise Suite</span>
       </div>
 
-      <nav style={{ padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
+      <nav style={{ padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: '4px', flex: 1, overflowY: 'auto' }}>
         {menuItems.map((item) => {
           const isActive = activeTab === item.id;
           return (
@@ -54,7 +56,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
         })}
       </nav>
 
-      <div style={{ padding: '16px 20px', borderTop: '1px solid #1e293b' }}>
+      {/* Sidebar Marketing Banner */}
+      <div style={{ padding: '16px 16px 0 16px' }}>
+        <div style={{ background: 'linear-gradient(135deg, #312e81 0%, #1e1b4b 100%)', border: '1px solid #4338ca', borderRadius: '8px', padding: '12px', textAlign: 'center' }}>
+          <div style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#a5b4fc', textTransform: 'uppercase', marginBottom: '4px' }}>⚡ Premium Upgrade</div>
+          <p style={{ fontSize: '0.8rem', color: '#e0e7ff', margin: '0 0 8px 0' }}>Unlock live DAT load feeds & automated IFTA calculations.</p>
+          <span style={{ fontSize: '0.75rem', color: '#38bdf8', fontWeight: 'bold', cursor: 'pointer' }}>Explore Plans →</span>
+        </div>
+      </div>
+
+      <div style={{ padding: '16px 20px', borderTop: '1px solid #1e293b', marginTop: '12px' }}>
         <button 
           onClick={() => alert('Signed out successfully.')}
           style={{ width: '100%', padding: '10px', background: '#ef4444', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.85rem' }}

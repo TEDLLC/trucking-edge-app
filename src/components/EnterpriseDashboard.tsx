@@ -6,9 +6,11 @@ import { EldPage } from '../pages/EldPage';
 import { FuelPage } from '../pages/FuelPage';
 import { FinancialsPage } from '../pages/FinancialsPage';
 import { SettingsPage } from '../pages/SettingsPage';
+import { BillingPage } from '../pages/BillingPage';
 import { LoadBoardIntegrationPage } from '../pages/LoadBoardIntegrationPage';
-import { MarketingBanner } from './MarketingBanner';
+import { SupportPage } from '../pages/SupportPage';
 import { UserProfileMenu } from './UserProfileMenu';
+import { MarketingBanner } from './MarketingBanner'; // Import header banner
 
 interface Driver {
   id: string;
@@ -56,8 +58,10 @@ export const EnterpriseDashboard: React.FC<EnterpriseDashboardProps> = ({
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
 
       <main style={{ flex: 1, padding: '32px', overflowY: 'auto' }}>
-        <UserProfileMenu setActiveTab={setActiveTab} />
+        {/* Header Marketing Banner */}
         <MarketingBanner />
+
+        <UserProfileMenu setActiveTab={setActiveTab} />
 
         {activeTab === 'dispatch' && (
           <LoadsPage 
@@ -72,7 +76,9 @@ export const EnterpriseDashboard: React.FC<EnterpriseDashboardProps> = ({
         {activeTab === 'fuel' && <FuelPage />}
         {activeTab === 'financials' && <FinancialsPage />}
         {activeTab === 'settings' && <SettingsPage />}
+        {activeTab === 'billing' && <BillingPage />}
         {activeTab === 'loadboards' && <LoadBoardIntegrationPage />}
+        {activeTab === 'support' && <SupportPage />}
       </main>
     </div>
   );

@@ -1,5 +1,24 @@
 import React, { useState } from 'react';
 
+interface LandingBannerProps {
+  onActionClick: () => void;
+}
+
+const LandingBanner: React.FC<LandingBannerProps> = ({ onActionClick }) => {
+  return (
+    <div style={{ background: 'linear-gradient(135deg, #4338ca 0%, #2563eb 50%, #0284c7 100%)', color: '#fff', padding: '16px 24px', textAlign: 'center', position: 'relative', overflow: 'hidden', borderBottom: '1px solid #1e293b' }}>
+      <div style={{ maxWidth: '1000px', margin: '0 auto', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+        <span style={{ fontSize: '0.95rem', fontWeight: '500' }}>
+          Get <strong>2 Months Free</strong> on all Annual Enterprise Fleet Subscriptions.
+        </span>
+        <button onClick={onActionClick} style={{ background: '#fff', color: '#1e1b4b', border: 'none', padding: '6px 14px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.85rem' }}>
+          Claim Offer →
+        </button>
+      </div>
+    </div>
+  );
+};
+
 interface LandingPageProps {
   onLoginSuccess: () => void;
 }
@@ -25,7 +44,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLoginSuccess }) => {
   const [contactPhone, setContactPhone] = useState('');
   const [address, setAddress] = useState('');
   const [truckType, setTruckType] = useState('Semi-Truck');
-  const [trailerType, setTrailerType] = useState('53ft Dry Van');
   const [truckCount, setTruckCount] = useState<number>(5);
   const [mcLeaseOption, setMcLeaseOption] = useState<'leaseOnly' | 'leaseWithDispatch'>('leaseOnly');
   const [signature, setSignature] = useState('');
@@ -181,6 +199,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLoginSuccess }) => {
           </button>
         </div>
       </nav>
+
+      {/* Top Promotional Announcement Banner */}
+      <LandingBanner onActionClick={() => setAuthMode('signup')} />
 
       {/* Hero Section */}
       <header style={{ textAlign: 'center', padding: '70px 20px 40px', maxWidth: '900px', margin: '0 auto' }}>
@@ -447,68 +468,44 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLoginSuccess }) => {
 
                       {activeEnterpriseTab === 'ifta' && (
                         <div>
-                          <h4 style={{ color: '#38bdf8', marginBottom: '8px', fontSize: '1.1rem' }}>IFTA Quarterly Fuel Tax Engine</h4>
-                          <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '16px' }}>Cross-referencing state mileage logs against bulk fuel purchases for Q3 tax liability reporting (Carrier details restricted).</p>
-                          <table style={{ width: '100%', fontSize: '0.85rem', borderCollapse: 'collapse', textAlign: 'left' }}>
-                            <thead>
-                              <tr style={{ borderBottom: '1px solid #1e293b', color: '#94a3b8' }}>
-                                <th style={{ padding: '6px' }}>Jurisdiction</th>
-                                <th style={{ padding: '6px' }}>Total Fleet Taxable Miles</th>
-                                <th style={{ padding: '6px' }}>Fuel Gallons Logged</th>
-                                <th style={{ padding: '6px' }}>Net Tax Status</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              <tr style={{ borderBottom: '1px solid #1e293b' }}><td style={{ padding: '6px' }}>Jurisdiction Group A</td><td style={{ padding: '6px' }}>24,410</td><td style={{ padding: '6px' }}>3,610</td><td style={{ padding: '6px', color: '#4ade80' }}>+$342.10 (Credit)</td></tr>
-                              <tr style={{ borderBottom: '1px solid #1e293b' }}><td style={{ padding: '6px' }}>Jurisdiction Group B</td><td style={{ padding: '6px' }}>12,850</td><td style={{ padding: '6px' }}>1,890</td><td style={{ padding: '6px', color: '#ef4444' }}>-$268.40 (Due)</td></tr>
-                              <tr><td style={{ padding: '6px' }}>Jurisdiction Group C</td><td style={{ padding: '6px' }}>15,430</td><td style={{ padding: '6px' }}>2,340</td><td style={{ padding: '6px', color: '#4ade80' }}>+$118.25 (Credit)</td></tr>
-                            </tbody>
-                          </table>
+                          <h4 style={{ color: '#f59e0b', marginBottom: '8px', fontSize: '1.1rem' }}>Quarterly IFTA Fuel Tax Automation</h4>
+                          <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '16px' }}>Automatic mileage and fuel receipt aggregation by jurisdiction to streamline quarterly IFTA reporting.</p>
+                          <div style={{ background: '#090d16', padding: '16px', borderRadius: '8px', border: '1px solid #1e293b', textAlign: 'center' }}>
+                            <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Active Q3 Tax Calculation Status</span>
+                            <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#4ade80', marginTop: '6px' }}>All Jurisdictions Synced & Balanced</div>
+                          </div>
                         </div>
                       )}
 
                       {activeEnterpriseTab === 'eld' && (
                         <div>
-                          <h4 style={{ color: '#f59e0b', marginBottom: '8px', fontSize: '1.1rem' }}>ELD & Telematics HOS Streams (Samsara / Motive API)</h4>
-                          <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '16px' }}>Real-time compliance monitoring tracking aggregate driver duty statuses and fleet drive clocks (Driver personal identifiers secured).</p>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            <div style={{ background: '#090d16', padding: '10px 14px', borderRadius: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #1e293b' }}>
-                              <div><strong>Active Fleet Units</strong> <span style={{ color: '#4ade80', fontSize: '0.75rem', marginLeft: '6px' }}>● ON DUTY (Driving)</span></div>
-                              <span style={{ color: '#38bdf8', fontSize: '0.85rem', fontFamily: 'monospace' }}>Avg Drive Clock Left: 06h 12m</span>
-                            </div>
-                            <div style={{ background: '#090d16', padding: '10px 14px', borderRadius: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #1e293b' }}>
-                              <div><strong>Off-Duty / Sleeper Berth</strong> <span style={{ color: '#f59e0b', fontSize: '0.75rem', marginLeft: '6px' }}>● COMPLIANT REST</span></div>
-                              <span style={{ color: '#f59e0b', fontSize: '0.85rem', fontFamily: 'monospace' }}>Rest Break Compliant</span>
-                            </div>
+                          <h4 style={{ color: '#38bdf8', marginBottom: '8px', fontSize: '1.1rem' }}>ELD Hours of Service (HOS) Streaming</h4>
+                          <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '16px' }}>Real-time driver duty status logs, violation alerts, and FMCSA compliance records.</p>
+                          <div style={{ background: '#090d16', padding: '16px', borderRadius: '8px', border: '1px solid #1e293b', textAlign: 'center' }}>
+                            <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Connected Telematics Stream</span>
+                            <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#38bdf8', marginTop: '6px' }}>100% Compliant Logs Active</div>
                           </div>
                         </div>
                       )}
 
                       {activeEnterpriseTab === 'vault' && (
                         <div>
-                          <h4 style={{ color: '#a855f7', marginBottom: '8px', fontSize: '1.1rem' }}>FMCSA Safety & Compliance Document Vault</h4>
-                          <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '16px' }}>Automated alerts for expiring driver qualifications, medical examiners certificates, and insurance policies (Restricted internal records).</p>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            <div style={{ background: '#090d16', padding: '10px 14px', borderRadius: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #1e293b' }}>
-                              <div><span>CDL Class A Certifications (Roster Pool)</span></div>
-                              <span style={{ color: '#4ade80', fontSize: '0.8rem' }}>100% Valid (No immediate expirations)</span>
-                            </div>
-                            <div style={{ background: '#090d16', padding: '10px 14px', borderRadius: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #1e293b' }}>
-                              <div><span>Medical Examiner & COI Verification Cards</span></div>
-                              <span style={{ color: '#ef4444', fontSize: '0.8rem' }}>⚠️ 1 Renewal Pending Review</span>
-                            </div>
+                          <h4 style={{ color: '#ec4899', marginBottom: '8px', fontSize: '1.1rem' }}>FMCSA Document Compliance Vault</h4>
+                          <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '16px' }}>Secure storage for driver qualifications, medical certificates, drug testing records, and insurance policies.</p>
+                          <div style={{ background: '#090d16', padding: '16px', borderRadius: '8px', border: '1px solid #1e293b', textAlign: 'center' }}>
+                            <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Vault Status</span>
+                            <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#ec4899', marginTop: '6px' }}>Zero Expiring Documents</div>
                           </div>
                         </div>
                       )}
 
                       {activeEnterpriseTab === 'rbac' && (
                         <div>
-                          <h4 style={{ color: '#ec4899', marginBottom: '8px', fontSize: '1.1rem' }}>Role-Based Access Control & Immutable Audit Logs</h4>
-                          <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '16px' }}>Dynamic security verification and permission checks mapped to your active view.</p>
-                          <div style={{ background: '#090d16', padding: '12px', borderRadius: '8px', border: '1px solid #1e293b', fontSize: '0.85rem', color: '#cbd5e1', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            <p>🔒 <strong>Active Module Permission Check:</strong> <span style={{ color: '#4ade80' }}>Passed</span> (Role: Enterprise Administrator / Restricted PII Masking Active).</p>
-                            <p>🛡️ <strong>Customer & Carrier Data Protection:</strong> <span style={{ color: '#38bdf8' }}>Enforced</span> — External customer profiles and sensitive identifiers are hidden from public telemetry views.</p>
-                            <p>📝 <strong>Audit Trail:</strong> Immutable security token verified against last active session action.</p>
+                          <h4 style={{ color: '#818cf8', marginBottom: '8px', fontSize: '1.1rem' }}>Role-Based Access Control (RBAC)</h4>
+                          <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '16px' }}>Manage granular permissions for dispatchers, fleet managers, safety officers, and accountants.</p>
+                          <div style={{ background: '#090d16', padding: '16px', borderRadius: '8px', border: '1px solid #1e293b', textAlign: 'center' }}>
+                            <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Active Roles Configured</span>
+                            <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#818cf8', marginTop: '6px' }}>Master Admin Access Enabled</div>
                           </div>
                         </div>
                       )}
@@ -516,214 +513,198 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLoginSuccess }) => {
                   </div>
                 )}
 
-                {authMode === 'demoBookingForm' && (
+                {authMode === 'login' && (
                   <div>
-                    <h3 style={{ fontSize: '1.4rem', fontWeight: 'bold', marginBottom: '6px', color: '#38bdf8' }}>Schedule an Enterprise Walkthrough</h3>
-                    <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '20px' }}>
-                      Pick a date and time for a 1-on-1 guided tour of our enterprise logistics platform with a senior account executive.
-                    </p>
+                    <h3 style={{ fontSize: '1.4rem', fontWeight: 'bold', marginBottom: '6px', color: '#fff' }}>Welcome Back</h3>
+                    <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '20px' }}>Log in to access your Trucking Edge Enterprise dashboard.</p>
+                    
+                    <div style={{ marginBottom: '16px' }}>
+                      <label style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: '6px' }}>Email Address</label>
+                      <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" style={{ width: '100%', padding: '10px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }} />
+                    </div>
 
-                    <form onSubmit={handleDemoSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                      <div>
-                        <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>Your Full Name</label>
-                        <input type="text" value={demoName} onChange={(e) => setDemoName(e.target.value)} required placeholder="e.g. Michael Vance" style={{ width: '100%', padding: '10px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff' }} />
-                      </div>
-                      <div>
-                        <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>Email Address (For Calendar Invite)</label>
-                        <input type="email" value={demoEmail} onChange={(e) => setDemoEmail(e.target.value)} required placeholder="michael@company.com" style={{ width: '100%', padding: '10px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff' }} />
-                      </div>
-                      <div>
-                        <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>Phone Number</label>
-                        <input type="tel" value={demoPhone} onChange={(e) => setDemoPhone(e.target.value)} required placeholder="(555) 000-0000" style={{ width: '100%', padding: '10px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff' }} />
-                      </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                        <div>
-                          <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>Preferred Date</label>
-                          <input type="date" value={demoDate} onChange={(e) => setDemoDate(e.target.value)} required style={{ width: '100%', padding: '10px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff' }} />
-                        </div>
-                        <div>
-                          <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>Preferred Time Slot</label>
-                          <select value={demoTime} onChange={(e) => setDemoTime(e.target.value)} style={{ width: '100%', padding: '10px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff' }}>
-                            <option value="09:00 AM">09:00 AM EST</option>
-                            <option value="11:00 AM">11:00 AM EST</option>
-                            <option value="02:00 PM">02:00 PM EST</option>
-                            <option value="04:00 PM">04:00 PM EST</option>
-                          </select>
-                        </div>
-                      </div>
-                      <button type="submit" style={{ background: '#38bdf8', color: '#0f172a', border: 'none', padding: '12px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', marginTop: '8px' }}>
-                        Confirm & Schedule Demo
-                      </button>
-                    </form>
+                    <div style={{ marginBottom: '24px' }}>
+                      <label style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: '6px' }}>Password</label>
+                      <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" style={{ width: '100%', padding: '10px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }} />
+                    </div>
+
+                    <button 
+                      type="button" 
+                      onClick={() => onLoginSuccess()} 
+                      style={{ width: '100%', background: '#6366f1', color: '#fff', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}
+                    >
+                      Log In to Dashboard
+                    </button>
+                  </div>
+                )}
+
+                {authMode === 'signup' && (
+                  <div>
+                    <h3 style={{ fontSize: '1.4rem', fontWeight: 'bold', marginBottom: '6px', color: '#38bdf8' }}>Enterprise Access Portal ({selectedPlan})</h3>
+                    <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '20px' }}>Complete your registration to deploy your dedicated fleet management suite.</p>
+                    <button 
+                      type="button" 
+                      onClick={() => onLoginSuccess()} 
+                      style={{ width: '100%', background: '#10b981', color: '#fff', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}
+                    >
+                      Complete & Open Dashboard
+                    </button>
                   </div>
                 )}
 
                 {authMode === 'dispatchForm' && (
-                  <div>
-                    <h3 style={{ fontSize: '1.4rem', fontWeight: 'bold', marginBottom: '6px', color: '#38bdf8' }}>Dispatch Services Agreement</h3>
+                  <form onSubmit={handleDispatchSubmit}>
+                    <h3 style={{ fontSize: '1.4rem', fontWeight: 'bold', marginBottom: '6px', color: '#10b981' }}>Apply for Dispatch Services</h3>
                     <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '20px' }}>
-                      Fee tiers: <strong style={{ color: '#4ade80' }}>8% for 1 truck</strong>, <strong style={{ color: '#4ade80' }}>6% for 2-4 trucks</strong>, <strong style={{ color: '#4ade80' }}>5% for 5+ trucks</strong>.
+                      Tiered commission rate based on your fleet size: <strong style={{ color: '#4ade80' }}>{getDispatchRate(truckCount)}</strong> for {truckCount} truck(s).
                     </p>
 
-                    <form onSubmit={handleDispatchSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
                       <div>
-                        <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>Carrier / Company Name</label>
-                        <input type="text" value={companyName} onChange={(e) => setCompanyName(e.target.value)} required placeholder="e.g. Express Trucking LLC" style={{ width: '100%', padding: '10px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff' }} />
-                      </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                        <div>
-                          <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>MC / DOT Number</label>
-                          <input type="text" value={mcNumber} onChange={(e) => setMcNumber(e.target.value)} required placeholder="MC-123456" style={{ width: '100%', padding: '10px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff' }} />
-                        </div>
-                        <div>
-                          <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>Contact Number</label>
-                          <input type="tel" value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} required placeholder="(555) 000-0000" style={{ width: '100%', padding: '10px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff' }} />
-                        </div>
-                      </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                        <div>
-                          <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>Email Address</label>
-                          <input type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} required placeholder="dispatch@company.com" style={{ width: '100%', padding: '10px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff' }} />
-                        </div>
-                        <div>
-                          <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>Number of Trucks: <span style={{ color: '#4ade80' }}>({getDispatchRate(truckCount)})</span></label>
-                          <input type="number" min="1" max="50" value={truckCount} onChange={(e) => setTruckCount(Number(e.target.value))} required style={{ width: '100%', padding: '10px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff' }} />
-                        </div>
+                        <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>Company Name</label>
+                        <input type="text" value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="ABC Logistics" style={{ width: '100%', padding: '8px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }} required />
                       </div>
                       <div>
-                        <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>Physical Address</label>
-                        <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} required placeholder="123 Highway St, City, ST 12345" style={{ width: '100%', padding: '10px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff' }} />
+                        <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>MC / DOT Number</label>
+                        <input type="text" value={mcNumber} onChange={(e) => setMcNumber(e.target.value)} placeholder="MC123456" style={{ width: '100%', padding: '8px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }} required />
                       </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                        <div>
-                          <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>Truck Type</label>
-                          <select value={truckType} onChange={(e) => setTruckType(e.target.value)} style={{ width: '100%', padding: '10px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff' }}>
-                            <option value="Semi-Truck">Semi-Truck</option>
-                            <option value="Box Truck">Box Truck</option>
-                            <option value="Power Only">Power Only</option>
-                            <option value="Flatbed">Flatbed Unit</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>Trailer Type</label>
-                          <select value={trailerType} onChange={(e) => setTrailerType(e.target.value)} style={{ width: '100%', padding: '10px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff' }}>
-                            <option value="Dry Van">53ft Dry Van</option>
-                            <option value="Reefer">Refrigerated (Reefer)</option>
-                            <option value="Flatbed">Flatbed / Step Deck</option>
-                            <option value="None">None / Power Only</option>
-                          </select>
-                        </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>Contact Email</label>
+                        <input type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} placeholder="dispatch@abclogistics.com" style={{ width: '100%', padding: '8px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }} required />
                       </div>
                       <div>
-                        <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>Electronic Signature (Full Legal Name)</label>
-                        <input type="text" value={signature} onChange={(e) => setSignature(e.target.value)} required placeholder="e.g. John Doe" style={{ width: '100%', padding: '10px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff', fontStyle: 'italic' }} />
+                        <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>Contact Phone</label>
+                        <input type="text" value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} placeholder="(555) 000-0000" style={{ width: '100%', padding: '8px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }} required />
                       </div>
-                      <button type="submit" style={{ background: '#10b981', color: '#fff', border: 'none', padding: '12px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', marginTop: '6px' }}>
-                        Sign & Submit Agreement ({getDispatchRate(truckCount)})
-                      </button>
-                    </form>
-                  </div>
+                    </div>
+
+                    <div style={{ marginBottom: '12px' }}>
+                      <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>Physical Business Address</label>
+                      <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="123 Highway Rd, City, State, ZIP" style={{ width: '100%', padding: '8px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }} required />
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>Equipment Type</label>
+                        <select value={truckType} onChange={(e) => setTruckType(e.target.value)} style={{ width: '100%', padding: '8px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff' }}>
+                          <option value="Semi-Truck">Semi-Truck</option>
+                          <option value="Box Truck">Box Truck</option>
+                          <option value="Hotshot">Hotshot</option>
+                          <option value="Power Only">Power Only</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>Active Fleet Size ({truckCount} Trucks)</label>
+                        <input type="range" min="1" max="20" value={truckCount} onChange={(e) => setTruckCount(Number(e.target.value))} style={{ width: '100%', accentColor: '#10b981', marginTop: '10px' }} />
+                      </div>
+                    </div>
+
+                    <div style={{ marginBottom: '20px' }}>
+                      <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>Electronic Signature (Type Full Legal Name)</label>
+                      <input type="text" value={signature} onChange={(e) => setSignature(e.target.value)} placeholder="John Doe" style={{ width: '100%', padding: '8px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }} required />
+                    </div>
+
+                    <button type="submit" style={{ width: '100%', background: '#10b981', color: '#fff', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
+                      Submit Dispatch Agreement & Open Suite
+                    </button>
+                  </form>
                 )}
 
                 {authMode === 'mcLeaseForm' && (
-                  <div>
-                    <h3 style={{ fontSize: '1.4rem', fontWeight: 'bold', marginBottom: '6px', color: '#f59e0b' }}>MC Lease Program Agreement</h3>
-                    <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '20px' }}>
-                      Options: <strong style={{ color: '#f59e0b' }}>15% for MC lease only</strong> or <strong style={{ color: '#f59e0b' }}>20% for MC lease + dispatch</strong>.
-                    </p>
+                  <form onSubmit={handleMcLeaseSubmit}>
+                    <h3 style={{ fontSize: '1.4rem', fontWeight: 'bold', marginBottom: '6px', color: '#f59e0b' }}>Apply for MC Lease Program</h3>
+                    <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '20px' }}>Lease under our established authority or combine with full-service dispatching.</p>
 
-                    <form onSubmit={handleMcLeaseSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
                       <div>
-                        <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>Carrier / Owner Name</label>
-                        <input type="text" value={companyName} onChange={(e) => setCompanyName(e.target.value)} required placeholder="e.g. Apex Logistics" style={{ width: '100%', padding: '10px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff' }} />
-                      </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                        <div>
-                          <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>MC / DOT Number</label>
-                          <input type="text" value={mcNumber} onChange={(e) => setMcNumber(e.target.value)} required placeholder="MC-123456" style={{ width: '100%', padding: '10px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff' }} />
-                        </div>
-                        <div>
-                          <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>Contact Number</label>
-                          <input type="tel" value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} required placeholder="(555) 000-0000" style={{ width: '100%', padding: '10px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff' }} />
-                        </div>
-                      </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                        <div>
-                          <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>Email Address</label>
-                          <input type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} required placeholder="owner@company.com" style={{ width: '100%', padding: '10px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff' }} />
-                        </div>
-                        <div>
-                          <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>MC Lease Package</label>
-                          <select value={mcLeaseOption} onChange={(e) => setMcLeaseOption(e.target.value as any)} style={{ width: '100%', padding: '10px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff' }}>
-                            <option value="leaseOnly">MC Lease Only (15%)</option>
-                            <option value="leaseWithDispatch">MC Lease + Dispatch (20%)</option>
-                          </select>
-                        </div>
+                        <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>Company / Owner Name</label>
+                        <input type="text" value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="John Doe Trucking" style={{ width: '100%', padding: '8px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }} required />
                       </div>
                       <div>
-                        <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>Physical Address</label>
-                        <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} required placeholder="123 Highway St, City, ST 12345" style={{ width: '100%', padding: '10px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff' }} />
+                        <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>Current MC / DOT (if applicable)</label>
+                        <input type="text" value={mcNumber} onChange={(e) => setMcNumber(e.target.value)} placeholder="None / Pending" style={{ width: '100%', padding: '8px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }} required />
                       </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                        <div>
-                          <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>Truck Type</label>
-                          <select value={truckType} onChange={(e) => setTruckType(e.target.value)} style={{ width: '100%', padding: '10px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff' }}>
-                            <option value="Semi-Truck">Semi-Truck</option>
-                            <option value="Box Truck">Box Truck</option>
-                            <option value="Power Only">Power Only</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>Trailer Type</label>
-                          <select value={trailerType} onChange={(e) => setTrailerType(e.target.value)} style={{ width: '100%', padding: '10px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff' }}>
-                            <option value="Dry Van">53ft Dry Van</option>
-                            <option value="Reefer">Reefer</option>
-                            <option value="Flatbed">Flatbed</option>
-                          </select>
-                        </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>Contact Email</label>
+                        <input type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} placeholder="owner@trucking.com" style={{ width: '100%', padding: '8px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }} required />
                       </div>
                       <div>
-                        <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>Electronic Signature (Full Legal Name)</label>
-                        <input type="text" value={signature} onChange={(e) => setSignature(e.target.value)} required placeholder="e.g. Jane Smith" style={{ width: '100%', padding: '10px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff', fontStyle: 'italic' }} />
+                        <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>Contact Phone</label>
+                        <input type="text" value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} placeholder="(555) 000-0000" style={{ width: '100%', padding: '8px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }} required />
                       </div>
-                      <button type="submit" style={{ background: '#f59e0b', color: '#0f172a', border: 'none', padding: '12px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', marginTop: '6px' }}>
-                        Sign & Submit MC Lease Agreement ({mcLeaseOption === 'leaseOnly' ? '15%' : '20%'})
-                      </button>
-                    </form>
-                  </div>
+                    </div>
+
+                    <div style={{ marginBottom: '12px' }}>
+                      <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>Residential / Business Address</label>
+                      <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="456 Fleet Ave, City, State, ZIP" style={{ width: '100%', padding: '8px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }} required />
+                    </div>
+
+                    <div style={{ marginBottom: '12px' }}>
+                      <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>Lease Program Option</label>
+                      <select value={mcLeaseOption} onChange={(e) => setMcLeaseOption(e.target.value as any)} style={{ width: '100%', padding: '8px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff' }}>
+                        <option value="leaseOnly">MC Lease Only (Access to Authority & Insurance)</option>
+                        <option value="leaseWithDispatch">MC Lease + Full Dedicated Dispatching</option>
+                      </select>
+                    </div>
+
+                    <div style={{ marginBottom: '20px' }}>
+                      <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>Electronic Signature</label>
+                      <input type="text" value={signature} onChange={(e) => setSignature(e.target.value)} placeholder="Jane Smith" style={{ width: '100%', padding: '8px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }} required />
+                    </div>
+
+                    <button type="submit" style={{ width: '100%', background: '#f59e0b', color: '#0f172a', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
+                      Submit MC Lease Application
+                    </button>
+                  </form>
                 )}
 
-                {(authMode === 'login' || authMode === 'signup') && (
-                  <div>
-                    <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '8px' }}>
-                      {authMode === 'login' ? 'Welcome Back' : 'Create Your Account'}
-                    </h3>
-                    <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '24px' }}>
-                      {authMode === 'login' ? 'Enter your credentials to access your dispatch suite.' : `Registering for the ${selectedPlan} plan.`}
-                    </p>
+                {authMode === 'demoBookingForm' && (
+                  <form onSubmit={handleDemoSubmit}>
+                    <h3 style={{ fontSize: '1.4rem', fontWeight: 'bold', marginBottom: '6px', color: '#38bdf8' }}>Schedule Enterprise Walkthrough</h3>
+                    <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '20px' }}>Book a 1-on-1 live demonstration of the Trucking Edge Enterprise platform with a logistics expert.</p>
 
-                    <form onSubmit={(e) => { e.preventDefault(); onLoginSuccess(); }} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
                       <div>
-                        <label style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: '6px' }}>Work Email</label>
-                        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="dispatch@yourcompany.com" required style={{ width: '100%', padding: '12px', background: '#020617', border: '1px solid #1e293b', borderRadius: '8px', color: '#fff', outline: 'none' }} />
+                        <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>Your Full Name</label>
+                        <input type="text" value={demoName} onChange={(e) => setDemoName(e.target.value)} placeholder="Alex Johnson" style={{ width: '100%', padding: '8px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }} required />
                       </div>
                       <div>
-                        <label style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: '6px' }}>Password</label>
-                        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required style={{ width: '100%', padding: '12px', background: '#020617', border: '1px solid #1e293b', borderRadius: '8px', color: '#fff', outline: 'none' }} />
+                        <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>Work Email</label>
+                        <input type="email" value={demoEmail} onChange={(e) => setDemoEmail(e.target.value)} placeholder="alex@fleet.com" style={{ width: '100%', padding: '8px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }} required />
                       </div>
-                      <button type="submit" style={{ background: '#6366f1', color: '#fff', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer', marginTop: '8px' }}>
-                        {authMode === 'login' ? 'Log In to Dashboard' : 'Complete Registration'}
-                      </button>
-                    </form>
-
-                    <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '0.85rem', color: '#94a3b8' }}>
-                      {authMode === 'login' ? (
-                        <span>Don't have an account? <button onClick={() => setAuthMode('signup')} style={{ background: 'none', border: 'none', color: '#38bdf8', cursor: 'pointer', fontWeight: 'bold' }}>Sign up</button></span>
-                      ) : (
-                        <span>Already have an account? <button onClick={() => setAuthMode('login')} style={{ background: 'none', border: 'none', color: '#38bdf8', cursor: 'pointer', fontWeight: 'bold' }}>Log in</button></span>
-                      )}
                     </div>
-                  </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>Phone Number</label>
+                        <input type="text" value={demoPhone} onChange={(e) => setDemoPhone(e.target.value)} placeholder="(555) 000-0000" style={{ width: '100%', padding: '8px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }} required />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>Preferred Date</label>
+                        <input type="date" value={demoDate} onChange={(e) => setDemoDate(e.target.value)} style={{ width: '100%', padding: '8px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff', boxSizing: 'border-box' }} required />
+                      </div>
+                    </div>
+
+                    <div style={{ marginBottom: '20px' }}>
+                      <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>Preferred Time Slot</label>
+                      <select value={demoTime} onChange={(e) => setDemoTime(e.target.value)} style={{ width: '100%', padding: '8px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff' }}>
+                        <option value="09:00 AM">09:00 AM EST</option>
+                        <option value="10:00 AM">10:00 AM EST</option>
+                        <option value="01:00 PM">01:00 PM EST</option>
+                        <option value="03:30 PM">03:30 PM EST</option>
+                      </select>
+                    </div>
+
+                    <button type="submit" style={{ width: '100%', background: '#38bdf8', color: '#0f172a', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
+                      Confirm Demo Booking
+                    </button>
+                  </form>
                 )}
               </>
             )}
@@ -733,3 +714,5 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLoginSuccess }) => {
     </div>
   );
 };
+
+export default LandingPage;

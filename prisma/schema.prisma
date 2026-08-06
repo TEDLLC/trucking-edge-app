@@ -1,0 +1,78 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  DISPATCHER
+  DRIVER
+}
+
+model Profile {
+  id              String                 @id @default(uuid())
+  userId          String                 @unique // Links to Supabase Auth user ID
+  email           String                 @unique
+  fullName        String
+  role            UserRole               @default(DRIVER)
+  securityProfile DriverSecurityProfile?
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+}
+
+model DriverSecurityProfile {
+  id           String   @id @default(uuid())
+  profileId    String   @unique
+  profile      Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  encryptedSsn String?  // Encrypted sensitive payload
+  bankRouting  String?  // Encrypted bank routing number
+  bankAccount  String?  // Encrypted bank account number
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model TripJurisdictionMileage {
+  id           String   @id @default(uuid())
+  tripId       String   // Links to your trip/dispatch ID
+  jurisdiction String   // State or Province code (e.g., "TX", "CA", "ON")
+  milesDriven  Float    // Miles driven in this jurisdiction
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model FuelReceipt {
+  id           String   @id @default(uuid())
+  driverId     String   // Links to Profile ID
+  jurisdiction String   // State or Province where fuel was purchased
+  gallons      Float    // Gallons purchased
+  totalCost    Float    // Total cost of fuel
+  purchaseDate DateTime // Date of purchase
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  actorId      String   // Links to Profile ID of the user performing the action
+  action       String   // e.g., "DECRYPT_DRIVER_PII", "UPDATE_LOAD_STATUS", "EXPORT_IFTA"
+  targetEntity String   // e.g., "DriverSecurityProfile", "Trip", "FuelReceipt"
+  details      String?  // Additional context or metadata about the action
+  ipAddress    String?  // Client IP or browser fingerprint
+  createdAt    DateTime @default(now())
+}
+
+model HosLog {
+  id               String   @id @default(uuid())
+  driverId         String   // Links to Profile ID of the driver
+  status           String   // DRIVING, ON_DUTY, OFF_DUTY, SLEEPER
+  hoursDrivenToday Float    // Total driving hours logged for the day
+  cycleHoursUsed   Float    // Cumulative hours used in the 70-hour / 8-day cycle
+  violation        Boolean  @default(false) // Flag indicating if an FMCSA violation occurred
+  createdAt        DateTime @default(now())
+}

@@ -1,48 +1,57 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { getFinancials, createExpense } from '../services/api';
+import type { FinancialSummary, Expense } from '../services/api';
 
-interface ExpenseItem {
-  id: string;
-  category: string;
-  description: string;
-  amount: number;
-  date: string;
-}
+export function FinancialsPage() {
+  const [financials, setFinancials] = useState<FinancialSummary>({
+    totalRevenue: 0,
+    totalExpenses: 0,
+    netProfit: 0,
+    expenses: [],
+  });
+  const [loading, setLoading] = useState<boolean>(true);
 
-export const FinancialsPage: React.FC = () => {
-  const [revenue, setRevenue] = useState(145800);
-  const [fuelExpense, setFuelExpense] = useState(38400);
-  const [maintenanceExpense, setMaintenanceExpense] = useState(12200);
-  const [insuranceExpense, setInsuranceExpense] = useState(15000);
-
-  const [expenses, setExpenses] = useState<ExpenseItem[]>([
-    { id: 'EXP-101', category: 'Maintenance', description: 'Preventative service - Freightliner #12', amount: 1250, date: '2026-08-01' },
-    { id: 'EXP-102', category: 'Insurance', description: 'Monthly Fleet Liability Coverage', amount: 3750, date: '2026-08-01' }
-  ]);
-
+  // Form states
   const [category, setCategory] = useState('Maintenance');
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
 
-  const totalExpenses = fuelExpense + maintenanceExpense + insuranceExpense + expenses.reduce((acc, item) => acc + item.amount, 0);
-  const netProfit = revenue - totalExpenses;
-  const profitMargin = revenue > 0 ? ((netProfit / revenue) * 100).toFixed(1) : '0';
+  // Fetch financial summary on load
+  const loadFinancialData = async () => {
+    setLoading(true);
+    const data = await getFinancials();
+    if (data) {
+      setFinancials(data);
+    }
+    setLoading(false);
+  };
 
-  const handleAddExpense = (e: React.FormEvent) => {
+  useEffect(() => {
+    loadFinancialData();
+  }, []);
+
+  const profitMargin = financials.totalRevenue > 0 
+    ? ((financials.netProfit / financials.totalRevenue) * 100).toFixed(1) 
+    : '0';
+
+  const handleAddExpense = async (e: React.FormEvent) => {
     e.preventDefault();
     const amt = parseFloat(amount) || 0;
     if (amt <= 0 || !description) return;
 
-    const newExpense: ExpenseItem = {
-      id: `EXP-${Math.floor(1000 + Math.random() * 9000)}`,
+    const newExpense = await createExpense({
       category,
       description,
       amount: amt,
-      date: new Date().toISOString().split('T')[0]
-    };
+      date: new Date().toISOString(),
+    });
 
-    setExpenses([newExpense, ...expenses]);
-    setDescription('');
-    setAmount('');
+    if (newExpense) {
+      // Refresh financials to get updated totals and expenses list
+      loadFinancialData();
+      setDescription('');
+      setAmount('');
+    }
   };
 
   return (
@@ -54,15 +63,21 @@ export const FinancialsPage: React.FC = () => {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '28px' }}>
         <div style={{ background: '#090d16', padding: '20px', borderRadius: '12px', border: '1px solid #1e293b' }}>
           <div style={{ fontSize: '0.85rem', color: '#94a3b8', marginBottom: '6px' }}>Gross Revenue</div>
-          <div style={{ fontSize: '1.75rem', fontWeight: '700', color: '#4ade80' }}>${revenue.toLocaleString()}</div>
+          <div style={{ fontSize: '1.75rem', fontWeight: '700', color: '#4ade80' }}>
+            ${financials.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </div>
         </div>
         <div style={{ background: '#090d16', padding: '20px', borderRadius: '12px', border: '1px solid #1e293b' }}>
           <div style={{ fontSize: '0.85rem', color: '#94a3b8', marginBottom: '6px' }}>Total Operating Expenses</div>
-          <div style={{ fontSize: '1.75rem', fontWeight: '700', color: '#ef4444' }}>${totalExpenses.toLocaleString()}</div>
+          <div style={{ fontSize: '1.75rem', fontWeight: '700', color: '#ef4444' }}>
+            ${financials.totalExpenses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </div>
         </div>
         <div style={{ background: '#090d16', padding: '20px', borderRadius: '12px', border: '1px solid #1e293b' }}>
           <div style={{ fontSize: '0.85rem', color: '#94a3b8', marginBottom: '6px' }}>Net Profit</div>
-          <div style={{ fontSize: '1.75rem', fontWeight: '700', color: '#38bdf8' }}>${netProfit.toLocaleString()}</div>
+          <div style={{ fontSize: '1.75rem', fontWeight: '700', color: '#38bdf8' }}>
+            ${financials.netProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </div>
         </div>
         <div style={{ background: '#090d16', padding: '20px', borderRadius: '12px', border: '1px solid #1e293b' }}>
           <div style={{ fontSize: '0.85rem', color: '#94a3b8', marginBottom: '6px' }}>Profit Margin</div>
@@ -76,7 +91,7 @@ export const FinancialsPage: React.FC = () => {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '16px' }}>
           <div>
             <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '6px' }}>Category</label>
-            <select value={category} onChange={(e) => setCategory(e.target.value)} style={{ width: '100%', padding: '10px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff' }}>
+            <select value={category} onChange={(e) => setCategory(e.target.value)} style={{ width: '100%', padding: '10px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff', outline: 'none' }}>
               <option value="Maintenance">Maintenance & Parts</option>
               <option value="Insurance">Insurance & Permits</option>
               <option value="Tolls">Tolls & Scales</option>
@@ -85,11 +100,11 @@ export const FinancialsPage: React.FC = () => {
           </div>
           <div>
             <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '6px' }}>Description</label>
-            <input type="text" placeholder="e.g. Brake replacement #05" value={description} onChange={(e) => setDescription(e.target.value)} required style={{ width: '100%', padding: '10px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff' }} />
+            <input type="text" placeholder="e.g. Brake replacement #05" value={description} onChange={(e) => setDescription(e.target.value)} required style={{ width: '100%', padding: '10px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff', outline: 'none' }} />
           </div>
           <div>
             <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '6px' }}>Amount ($)</label>
-            <input type="number" step="0.01" placeholder="e.g. 650.00" value={amount} onChange={(e) => setAmount(e.target.value)} required style={{ width: '100%', padding: '10px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff' }} />
+            <input type="number" step="0.01" placeholder="e.g. 650.00" value={amount} onChange={(e) => setAmount(e.target.value)} required style={{ width: '100%', padding: '10px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff', outline: 'none' }} />
           </div>
         </div>
         <button type="submit" style={{ background: '#6366f1', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>
@@ -99,29 +114,35 @@ export const FinancialsPage: React.FC = () => {
 
       {/* Expenses Ledger Table */}
       <div style={{ background: '#090d16', borderRadius: '12px', border: '1px solid #1e293b', overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
-          <thead>
-            <tr style={{ background: '#1e293b', color: '#94a3b8' }}>
-              <th style={{ padding: '12px 16px' }}>Expense ID</th>
-              <th style={{ padding: '12px 16px' }}>Category</th>
-              <th style={{ padding: '12px 16px' }}>Description</th>
-              <th style={{ padding: '12px 16px' }}>Amount</th>
-              <th style={{ padding: '12px 16px' }}>Date</th>
-            </tr>
-          </thead>
-          <tbody>
-            {expenses.map((item) => (
-              <tr key={item.id} style={{ borderBottom: '1px solid #1e293b' }}>
-                <td style={{ padding: '14px 16px', fontWeight: 'bold' }}>{item.id}</td>
-                <td style={{ padding: '14px 16px', color: '#38bdf8' }}>{item.category}</td>
-                <td style={{ padding: '14px 16px', color: '#fff' }}>{item.description}</td>
-                <td style={{ padding: '14px 16px', color: '#ef4444', fontWeight: 'bold' }}>${item.amount.toFixed(2)}</td>
-                <td style={{ padding: '14px 16px', color: '#94a3b8' }}>{item.date}</td>
+        {loading ? (
+          <p style={{ padding: '16px', color: '#94a3b8' }}>Loading financial ledger...</p>
+        ) : financials.expenses.length === 0 ? (
+          <p style={{ padding: '16px', color: '#94a3b8' }}>No custom expenses logged yet.</p>
+        ) : (
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
+            <thead>
+              <tr style={{ background: '#1e293b', color: '#94a3b8' }}>
+                <th style={{ padding: '12px 16px' }}>Expense ID</th>
+                <th style={{ padding: '12px 16px' }}>Category</th>
+                <th style={{ padding: '12px 16px' }}>Description</th>
+                <th style={{ padding: '12px 16px' }}>Amount</th>
+                <th style={{ padding: '12px 16px' }}>Date</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {financials.expenses.map((item) => (
+                <tr key={item.id} style={{ borderBottom: '1px solid #1e293b' }}>
+                  <td style={{ padding: '14px 16px', fontWeight: 'bold' }}>{item.id.slice(0, 8)}...</td>
+                  <td style={{ padding: '14px 16px', color: '#38bdf8' }}>{item.category}</td>
+                  <td style={{ padding: '14px 16px', color: '#fff' }}>{item.description}</td>
+                  <td style={{ padding: '14px 16px', color: '#ef4444', fontWeight: 'bold' }}>${item.amount.toFixed(2)}</td>
+                  <td style={{ padding: '14px 16px', color: '#94a3b8' }}>{new Date(item.date).toLocaleDateString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );
-};
+}

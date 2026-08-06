@@ -1,182 +1,133 @@
 import React, { useState } from 'react';
 
-interface FuelRecord {
-  id: string;
-  truck: string;
-  location: string;
-  gallons: number;
-  totalCost: number;
-  date: string;
-}
+export function FuelPage() {
+  const [jurisdiction, setJurisdiction] = useState('TX');
+  const [gallons, setGallons] = useState<string>('50');
+  const [totalCost, setTotalCost] = useState<string>('200');
 
-interface FuelStation {
-  name: string;
-  chain: string;
-  price: string;
-  amenities: string[];
-}
-
-export const FuelPage: React.FC = () => {
-  const [fuelLogs, setFuelLogs] = useState<FuelRecord[]>([
-    { id: 'FUEL-901', truck: 'Freightliner #12', location: "Pilot #451 - Effingham, IL", gallons: 145.5, totalCost: 523.80, date: '2026-08-01' }
+  const [receipts, setReceipts] = useState([
+    { jurisdiction: 'TX', gallons: 120.5, totalCost: 482.0 },
+    { jurisdiction: 'IL', gallons: 85.0, totalCost: 357.0 }
   ]);
 
-  const [origin, setOrigin] = useState('Chicago, IL');
-  const [destination, setDestination] = useState('Dallas, TX');
-  const [stations, setStations] = useState<FuelStation[]>([
-    { name: 'Pilot Travel Center #382', chain: 'Pilot', price: '$3.59/gal', amenities: ['Truck Parking', 'Scales', 'Showers'] },
-    { name: 'Love\'s Travel Stop #619', chain: 'Loves', price: '$3.52/gal', amenities: ['DEF at Pump', 'Tire Care', 'Subway'] },
-    { name: 'Flying J Travel Plaza #81', chain: 'Flying J', price: '$3.64/gal', amenities: ['CAT Scales', 'Restaraunts', 'Reserved Parking'] }
-  ]);
-
-  // Form states
-  const [truck, setTruck] = useState('Freightliner #12');
-  const [location, setLocation] = useState('');
-  const [gallons, setGallons] = useState('');
-  const [totalCost, setTotalCost] = useState('');
-
-  const handleRouteSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Simulate dynamic fuel corridor stations fetched along origin -> destination route
-    setStations([
-      { name: `Pilot Travel Center (${origin} Corridor)`, chain: 'Pilot', price: '$3.55/gal', amenities: ['Truck Parking', 'Scales'] },
-      { name: `Love's Travel Stop (Midway Route)`, chain: 'Loves', price: '$3.49/gal', amenities: ['DEF at Pump', 'Tire Care'] },
-      { name: `TA Travel Center (${destination} Approach)`, chain: 'TA', price: '$3.62/gal', amenities: ['Full Repair Shop', 'Showers'] }
-    ]);
+  const mileageMap: { [state: string]: number } = {
+    TX: 950,
+    IL: 620,
+    OH: 410,
+    IN: 300,
+    PA: 450
   };
 
-  const handleAddFuel = (e: React.FormEvent) => {
+  const handleRecord = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-    const g = parseFloat(gallons) || 0;
-    const c = parseFloat(totalCost) || 0;
-    if (g <= 0 || c <= 0) return;
+    e.stopPropagation();
 
-    const newRecord: FuelRecord = {
-      id: `FUEL-${Math.floor(1000 + Math.random() * 9000)}`,
-      truck,
-      location,
-      gallons: g,
-      totalCost: c,
-      date: new Date().toISOString().split('T')[0]
+    const gNum = parseFloat(gallons);
+    const cNum = parseFloat(totalCost);
+
+    if (isNaN(gNum) || isNaN(cNum) || gNum <= 0 || cNum <= 0) {
+      alert('Please enter valid numbers.');
+      return;
+    }
+
+    const newReceipt = {
+      jurisdiction,
+      gallons: gNum,
+      totalCost: cNum
     };
 
-    setFuelLogs([newRecord, ...fuelLogs]);
-    setLocation('');
-    setGallons('');
-    setTotalCost('');
+    setReceipts([newReceipt, ...receipts]);
+    setGallons('50');
+    setTotalCost('200');
   };
 
+  const summaryMap: { [state: string]: { gallons: number; cost: number } } = {};
+  receipts.forEach(r => {
+    if (!summaryMap[r.jurisdiction]) {
+      summaryMap[r.jurisdiction] = { gallons: 0, cost: 0 };
+    }
+    summaryMap[r.jurisdiction].gallons += r.gallons;
+    summaryMap[r.jurisdiction].cost += r.totalCost;
+  });
+
+  const allStates = Array.from(new Set([...Object.keys(summaryMap), ...Object.keys(mileageMap)]));
+
   return (
-    <div style={{ color: '#f8fafc' }}>
-      <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '8px' }}>Fuel Map & IFTA Logs</h2>
-      <p style={{ color: '#94a3b8', marginBottom: '24px' }}>Optimize corridor routing, track real-time fuel prices along lanes, and record purchases.</p>
+    <div style={{ color: '#f8fafc', padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
+      <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '8px' }}>Fuel Map & IFTA Tracker</h2>
+      <p style={{ color: '#94a3b8', marginBottom: '24px' }}>Log jurisdiction-specific fuel purchases and monitor automated IFTA quarterly tax reports.</p>
 
-      {/* Corridor Route Fuel Planner Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
-        
-        {/* Route Planner */}
-        <div style={{ background: '#090d16', padding: '20px', borderRadius: '12px', border: '1px solid #1e293b' }}>
-          <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '16px', color: '#38bdf8' }}>Route Fuel Corridor</h3>
-          <form onSubmit={handleRouteSearch}>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>Origin Hub</label>
-              <input type="text" value={origin} onChange={(e) => setOrigin(e.target.value)} required style={{ width: '100%', padding: '10px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff' }} />
-            </div>
-            <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>Destination Hub</label>
-              <input type="text" value={destination} onChange={(e) => setDestination(e.target.value)} required style={{ width: '100%', padding: '10px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff' }} />
-            </div>
-            <button type="submit" style={{ width: '100%', background: '#3b82f6', color: '#fff', border: 'none', padding: '10px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>
-              Find Stations On Route
-            </button>
-          </form>
-        </div>
-
-        {/* Stations Along Route Display */}
-        <div style={{ background: '#090d16', padding: '20px', borderRadius: '12px', border: '1px solid #1e293b', maxHeight: '300px', overflowY: 'auto' }}>
-          <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '12px', color: '#4ade80' }}>Recommended Stops Along Lane</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {stations.map((st, idx) => (
-              <div key={idx} style={{ background: '#020617', padding: '10px 14px', borderRadius: '8px', border: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#fff' }}>{st.name}</div>
-                  <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{st.amenities.join(' • ')}</div>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ color: '#facc15', fontWeight: 'bold', fontSize: '0.95rem' }}>{st.price}</div>
-                  <button 
-                    onClick={() => setLocation(st.name)}
-                    style={{ background: '#1e293b', color: '#38bdf8', border: '1px solid #334155', padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem', cursor: 'pointer', marginTop: '4px' }}
-                  >
-                    Select Stop
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-      </div>
-
-      {/* Record Fuel Form */}
-      <form onSubmit={handleAddFuel} style={{ background: '#090d16', padding: '20px', borderRadius: '12px', border: '1px solid #1e293b', marginBottom: '24px' }}>
-        <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '16px', color: '#38bdf8' }}>Record Fuel Purchase</h3>
+      <div style={{ background: '#090d16', padding: '20px', borderRadius: '12px', border: '1px solid #1e293b', marginBottom: '24px' }}>
+        <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '16px', color: '#38bdf8' }}>Log Fuel Purchase</h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '16px' }}>
           <div>
-            <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '6px' }}>Truck ID</label>
-            <input type="text" value={truck} onChange={(e) => setTruck(e.target.value)} required style={{ width: '100%', padding: '10px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff' }} />
+            <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '6px' }}>Jurisdiction (State)</label>
+            <select
+              value={jurisdiction}
+              onChange={(e) => setJurisdiction(e.target.value)}
+              style={{ width: '100%', padding: '10px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff', outline: 'none' }}
+            >
+              <option value="TX">Texas (TX)</option>
+              <option value="IL">Illinois (IL)</option>
+              <option value="OH">Ohio (OH)</option>
+              <option value="IN">Indiana (IN)</option>
+              <option value="PA">Pennsylvania (PA)</option>
+            </select>
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '6px' }}>Truck Stop / Location</label>
-            <input type="text" placeholder="Select above or type location" value={location} onChange={(e) => setLocation(e.target.value)} required style={{ width: '100%', padding: '10px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff' }} />
-          </div>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '6px' }}>Gallons</label>
-            <input type="number" step="0.1" placeholder="e.g. 120" value={gallons} onChange={(e) => setGallons(e.target.value)} required style={{ width: '100%', padding: '10px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff' }} />
+            <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '6px' }}>Gallons Purchased</label>
+            <input
+              type="text"
+              value={gallons}
+              onChange={(e) => setGallons(e.target.value)}
+              style={{ width: '100%', padding: '10px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff', outline: 'none' }}
+            />
           </div>
           <div>
             <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '6px' }}>Total Cost ($)</label>
-            <input type="number" step="0.01" placeholder="e.g. 450.00" value={totalCost} onChange={(e) => setTotalCost(e.target.value)} required style={{ width: '100%', padding: '10px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff' }} />
+            <input
+              type="text"
+              value={totalCost}
+              onChange={(e) => setTotalCost(e.target.value)}
+              style={{ width: '100%', padding: '10px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff', outline: 'none' }}
+            />
           </div>
         </div>
-
-        {parseFloat(gallons) > 0 && parseFloat(totalCost) > 0 && (
-          <div style={{ padding: '10px', background: '#0f172a', border: '1px solid #334155', borderRadius: '6px', marginBottom: '14px', textAlign: 'center', fontSize: '0.9rem' }}>
-            Effective Price: <strong style={{ color: '#38bdf8' }}>${(parseFloat(totalCost) / parseFloat(gallons)).toFixed(3)} / gal</strong>
-          </div>
-        )}
-
-        <button type="submit" style={{ background: '#6366f1', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>
-          Log Fuel Entry
+        <button
+          type="button"
+          onClick={handleRecord}
+          style={{ background: '#6366f1', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}
+        >
+          Record Fuel Purchase
         </button>
-      </form>
+      </div>
 
-      {/* Fuel Table */}
       <div style={{ background: '#090d16', borderRadius: '12px', border: '1px solid #1e293b', overflow: 'hidden' }}>
+        <h3 style={{ fontSize: '1rem', fontWeight: '600', padding: '16px', borderBottom: '1px solid #1e293b', color: '#38bdf8' }}>Quarterly IFTA Tax & Mileage Breakdown</h3>
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
           <thead>
             <tr style={{ background: '#1e293b', color: '#94a3b8' }}>
-              <th style={{ padding: '12px 16px' }}>Record ID</th>
-              <th style={{ padding: '12px 16px' }}>Truck</th>
-              <th style={{ padding: '12px 16px' }}>Location</th>
-              <th style={{ padding: '12px 16px' }}>Gallons</th>
-              <th style={{ padding: '12px 16px' }}>Total Cost</th>
-              <th style={{ padding: '12px 16px' }}>PPU</th>
-              <th style={{ padding: '12px 16px' }}>Date</th>
+              <th style={{ padding: '12px 16px' }}>Jurisdiction</th>
+              <th style={{ padding: '12px 16px' }}>Total Miles</th>
+              <th style={{ padding: '12px 16px' }}>Gallons Purchased</th>
+              <th style={{ padding: '12px 16px' }}>Total Spent ($)</th>
+              <th style={{ padding: '12px 16px' }}>Avg MPG</th>
             </tr>
           </thead>
           <tbody>
-            {fuelLogs.map((log) => {
-              const ppu = (log.totalCost / log.gallons).toFixed(3);
+            {allStates.map((state, idx) => {
+              const totalGallons = summaryMap[state]?.gallons || 0;
+              const totalMiles = mileageMap[state] || 0;
+              const taxPaid = summaryMap[state]?.cost || 0;
+              const mpg = totalGallons > 0 ? (totalMiles / totalGallons).toFixed(2) : '0.00';
+
               return (
-                <tr key={log.id} style={{ borderBottom: '1px solid #1e293b' }}>
-                  <td style={{ padding: '14px 16px', fontWeight: 'bold' }}>{log.id}</td>
-                  <td style={{ padding: '14px 16px', color: '#38bdf8' }}>{log.truck}</td>
-                  <td style={{ padding: '14px 16px', color: '#fff' }}>{log.location}</td>
-                  <td style={{ padding: '14px 16px' }}>{log.gallons} gal</td>
-                  <td style={{ padding: '14px 16px', color: '#4ade80', fontWeight: 'bold' }}>${log.totalCost.toFixed(2)}</td>
-                  <td style={{ padding: '14px 16px', color: '#facc15' }}>${ppu}/gal</td>
-                  <td style={{ padding: '14px 16px', color: '#94a3b8' }}>{log.date}</td>
+                <tr key={idx} style={{ borderBottom: '1px solid #1e293b' }}>
+                  <td style={{ padding: '14px 16px', fontWeight: 'bold', color: '#fff' }}>{state}</td>
+                  <td style={{ padding: '14px 16px', color: '#cbd5e1' }}>{totalMiles} mi</td>
+                  <td style={{ padding: '14px 16px', color: '#38bdf8' }}>{totalGallons.toFixed(1)} gal</td>
+                  <td style={{ padding: '14px 16px', color: '#4ade80' }}>${taxPaid.toFixed(2)}</td>
+                  <td style={{ padding: '14px 16px', fontWeight: 'bold', color: '#f59e0b' }}>{mpg} MPG</td>
                 </tr>
               );
             })}
@@ -185,4 +136,4 @@ export const FuelPage: React.FC = () => {
       </div>
     </div>
   );
-};
+}

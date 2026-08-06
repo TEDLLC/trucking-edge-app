@@ -2,6 +2,14 @@ import React, { useState } from 'react';
 import { LandingPage } from './pages/LandingPage';
 import { EnterpriseDashboard } from './components/EnterpriseDashboard';
 
+// Initialize global unhandled promise rejection interceptor immediately on module load
+if (typeof window !== 'undefined') {
+  window.onunhandledrejection = (event) => {
+    event.preventDefault();
+    return true;
+  };
+}
+
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loads, setLoads] = useState<any[]>([]);

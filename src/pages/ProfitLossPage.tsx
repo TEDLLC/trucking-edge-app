@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
+import { useRegionStore } from '../services/useRegion';
 
 export function ProfitLossPage() {
+  const { region } = useRegionStore();
+  const isEU = region === 'EU' || region?.includes('EU');
+  const currencySymbol = isEU ? '€' : '$';
+
   const [category, setCategory] = useState('Insurance & Permits');
   const [description, setDescription] = useState('insurance');
   const [amount, setAmount] = useState<number>(1350);
@@ -44,22 +49,28 @@ export function ProfitLossPage() {
 
   return (
     <div style={{ color: '#f8fafc', padding: '24px' }}>
-      <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '8px' }}>Profit & Loss Financial Tracker</h2>
-      <p style={{ color: '#94a3b8', marginBottom: '24px' }}>Analyze gross revenue, operating costs, net margins, and ledger expenses.</p>
+      <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '8px' }}>
+        {isEU ? 'EU Profit & Loss Financial Tracker' : 'Profit & Loss Financial Tracker'}
+      </h2>
+      <p style={{ color: '#94a3b8', marginBottom: '24px' }}>
+        {isEU 
+          ? 'Analyze gross revenue, operating costs, net margins, and ledger expenses in Euros (€).' 
+          : 'Analyze gross revenue, operating costs, net margins, and ledger expenses.'}
+      </p>
 
       {/* Summary KPI Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '24px' }}>
         <div style={{ background: '#090d16', padding: '20px', borderRadius: '12px', border: '1px solid #1e293b' }}>
           <p style={{ fontSize: '0.85rem', color: '#94a3b8', marginBottom: '8px' }}>Gross Revenue</p>
-          <p style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#4ade80' }}>${totalRevenue.toFixed(2)}</p>
+          <p style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#4ade80' }}>{currencySymbol}{totalRevenue.toFixed(2)}</p>
         </div>
         <div style={{ background: '#090d16', padding: '20px', borderRadius: '12px', border: '1px solid #1e293b' }}>
           <p style={{ fontSize: '0.85rem', color: '#94a3b8', marginBottom: '8px' }}>Total Operating Expenses</p>
-          <p style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#ef4444' }}>${totalExpenses.toFixed(2)}</p>
+          <p style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#ef4444' }}>{currencySymbol}{totalExpenses.toFixed(2)}</p>
         </div>
         <div style={{ background: '#090d16', padding: '20px', borderRadius: '12px', border: '1px solid #1e293b' }}>
           <p style={{ fontSize: '0.85rem', color: '#94a3b8', marginBottom: '8px' }}>Net Profit</p>
-          <p style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#38bdf8' }}>${netProfit.toFixed(2)}</p>
+          <p style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#38bdf8' }}>{currencySymbol}{netProfit.toFixed(2)}</p>
         </div>
         <div style={{ background: '#090d16', padding: '20px', borderRadius: '12px', border: '1px solid #1e293b' }}>
           <p style={{ fontSize: '0.85rem', color: '#94a3b8', marginBottom: '8px' }}>Profit Margin</p>
@@ -96,7 +107,7 @@ export function ProfitLossPage() {
             />
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '6px' }}>Amount ($)</label>
+            <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '6px' }}>Amount ({currencySymbol})</label>
             <input
               type="number"
               step="0.01"
@@ -137,7 +148,7 @@ export function ProfitLossPage() {
                   </td>
                   <td style={{ padding: '14px 16px', color: '#fff' }}>{rec.description}</td>
                   <td style={{ padding: '14px 16px', fontWeight: 'bold', color: isRev ? '#4ade80' : '#ef4444' }}>
-                    {isRev ? '+' : '-'}${rec.amount.toFixed(2)}
+                    {isRev ? '+' : '-'}{currencySymbol}{rec.amount.toFixed(2)}
                   </td>
                   <td style={{ padding: '14px 16px', color: '#94a3b8' }}>{new Date(rec.date).toLocaleDateString()}</td>
                 </tr>

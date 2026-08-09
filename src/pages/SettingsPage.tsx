@@ -1,10 +1,15 @@
 import React, { useState } from 'react';
+import { useRegionStore } from '../services/useRegion';
 
 export const SettingsPage: React.FC = () => {
+  const { region } = useRegionStore();
+  const isEU = region === 'EU' || region?.includes('EU');
+  const unitLabel = isEU ? 'Kilometers' : 'Miles';
+
   const [role, setRole] = useState<'Fleet Owner' | 'Dispatcher' | 'Safety Manager' | 'Accounting'>('Fleet Owner');
   const [autoDispatch, setAutoDispatch] = useState(true);
   const [smsVerification, setSmsVerification] = useState(false);
-  const [geofenceRadius, setGeofenceRadius] = useState('15');
+  const [geofenceRadius, setGeofenceRadius] = useState(isEU ? '25' : '15');
   const [complianceLockout, setComplianceLockout] = useState(true);
   const [saved, setSaved] = useState(false);
 
@@ -16,8 +21,14 @@ export const SettingsPage: React.FC = () => {
 
   return (
     <div style={{ padding: '24px', color: '#f8fafc', maxWidth: '800px' }}>
-      <h2 style={{ fontSize: '1.8rem', fontWeight: 'bold', marginBottom: '8px' }}>Master Settings & Role Controls</h2>
-      <p style={{ color: '#94a3b8', marginBottom: '24px' }}>Configure operational parameters and system-wide automation rules based on user roles.</p>
+      <h2 style={{ fontSize: '1.8rem', fontWeight: 'bold', marginBottom: '8px' }}>
+        {isEU ? 'EU Master Settings & Role Controls' : 'Master Settings & Role Controls'}
+      </h2>
+      <p style={{ color: '#94a3b8', marginBottom: '24px' }}>
+        {isEU 
+          ? 'Configure operational parameters and system-wide automation rules for European transport operations.' 
+          : 'Configure operational parameters and system-wide automation rules based on user roles.'}
+      </p>
 
       {saved && (
         <div style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid #10b981', color: '#34d399', padding: '12px', borderRadius: '8px', marginBottom: '20px' }}>
@@ -57,14 +68,22 @@ export const SettingsPage: React.FC = () => {
 
         {/* Radius Input */}
         <div style={{ borderTop: '1px solid #1e293b', paddingTop: '16px' }}>
-          <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 'bold', marginBottom: '6px' }}>Geofence Alert Radius (Miles)</label>
+          <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 'bold', marginBottom: '6px' }}>
+            Geofence Alert Radius ({unitLabel})
+          </label>
           <input type="number" value={geofenceRadius} onChange={(e) => setGeofenceRadius(e.target.value)} style={{ width: '100%', padding: '10px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff' }} />
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #1e293b', paddingTop: '16px' }}>
           <div>
-            <div style={{ fontWeight: 'bold' }}>Strict ELD Compliance Lockout</div>
-            <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Prevent load dispatching if driver HOS limits are reached.</div>
+            <div style={{ fontWeight: 'bold' }}>
+              {isEU ? 'Strict Tachograph & HOS Compliance Lockout' : 'Strict ELD Compliance Lockout'}
+            </div>
+            <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>
+              {isEU 
+                ? 'Prevent load dispatching if driver EU driving time limits are reached.' 
+                : 'Prevent load dispatching if driver HOS limits are reached.'}
+            </div>
           </div>
           <input type="checkbox" checked={complianceLockout} onChange={(e) => setComplianceLockout(e.target.checked)} style={{ width: '20px', height: '20px', cursor: 'pointer' }} />
         </div>

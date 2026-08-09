@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
 import { evaluateHosCompliance, type HosStatusPayload } from '../utils/hosService';
 import { logAuditAction } from '../utils/auditLogger';
+import { useRegionStore } from '../services/useRegion';
 
 export const HosLogsDashboard: React.FC = () => {
+  const { region } = useRegionStore();
+  const isEU = region === 'EU' || region?.includes('EU');
+
   const [drivers] = useState([
     { id: 'driver-001', name: 'John Doe (Truck #104)' },
     { id: 'driver-002', name: 'Sarah Jenkins (Truck #208)' },
@@ -11,17 +15,31 @@ export const HosLogsDashboard: React.FC = () => {
 
   const [driverId, setDriverId] = useState('driver-001');
   const [status, setStatus] = useState<'DRIVING' | 'ON_DUTY' | 'OFF_DUTY' | 'SLEEPER'>('DRIVING');
-  const [hoursDrivenToday, setHoursDrivenToday] = useState<number>(8.5);
-  const [cycleHoursUsed, setCycleHoursUsed] = useState<number>(45.0);
+  const [hoursDrivenToday, setHoursDrivenToday] = useState<number>(isEU ? 8.0 : 8.5);
+  const [cycleHoursUsed, setCycleHoursUsed] = useState<number>(isEU ? 36.0 : 45.0);
   
   const [logs, setLogs] = useState<Array<HosStatusPayload & { violation: boolean; reason?: string; timestamp: string; driverName: string }>>([
-    { driverId: 'driver-001', driverName: 'John Doe (Truck #104)', status: 'DRIVING', hoursDrivenToday: 8.5, cycleHoursUsed: 45.0, violation: false, timestamp: '10:30 AM' },
-    { driverId: 'driver-002', driverName: 'Sarah Jenkins (Truck #208)', status: 'ON_DUTY', hoursDrivenToday: 11.5, cycleHoursUsed: 71.0, violation: true, reason: 'Exceeded maximum daily driving limit of 11 hours (11.5 hrs logged).', timestamp: '09:15 AM' }
+    { driverId: 'driver-001', driverName: 'John Doe (Truck #104)', status: 'DRIVING', hoursDrivenToday: isEU ? 8.0 : 8.5, cycleHoursUsed: isEU ? 36.0 : 45.0, violation: false, timestamp: '10:30 AM' },
+    { driverId: 'driver-002', driverName: 'Sarah Jenkins (Truck #208)', status: isEU ? 'DRIVING' : 'ON_DUTY', hoursDrivenToday: isEU ? 10.2 : 11.5, cycleHoursUsed: isEU ? 56.0 : 71.0, violation: true, reason: isEU ? 'Exceeded maximum daily driving limit of 9-10 hours under EC 561/2006 (10.2 hrs logged without qualifying break extension).' : 'Exceeded maximum daily driving limit of 11 hours (11.5 hrs logged).', timestamp: '09:15 AM' }
   ]);
 
   const handleAddHosLog = async (e: React.FormEvent) => {
     e.preventDefault();
-    const evaluation = evaluateHosCompliance({ driverId, status, hoursDrivenToday, cycleHoursUsed });
+    
+    let violation = false;
+    let reason = '';
+
+    if (isEU) {
+      if (status === 'DRIVING' && hoursDrivenToday > 9.0) {
+        violation = true;
+        reason = `Exceeded standard EU daily driving limit of 9 hours under Regulation 561/2006 (${hoursDrivenToday} hrs logged).`;
+      }
+    } else {
+      const evaluation = evaluateHosCompliance({ driverId, status, hoursDrivenToday, cycleHoursUsed });
+      violation = evaluation.violation;
+      reason = evaluation.reason || '';
+    }
+
     const selectedDriver = drivers.find(d => d.id === driverId)?.name || driverId;
 
     const newLog = {
@@ -30,27 +48,33 @@ export const HosLogsDashboard: React.FC = () => {
       status,
       hoursDrivenToday,
       cycleHoursUsed,
-      violation: evaluation.violation,
-      reason: evaluation.reason,
+      violation,
+      reason,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
     setLogs([newLog, ...logs]);
 
-    if (evaluation.violation) {
+    if (violation) {
       await logAuditAction({
         actorId: 'system-compliance-monitor',
-        action: 'FMCSA_HOS_VIOLATION_DETECTED',
+        action: isEU ? 'EU_HOS_VIOLATION_DETECTED' : 'FMCSA_HOS_VIOLATION_DETECTED',
         targetEntity: 'HosLog',
-        details: `Driver ${selectedDriver} flagged: ${evaluation.reason}`
+        details: `Driver ${selectedDriver} flagged (${region}): ${reason}`
       });
     }
   };
 
   return (
     <div style={{ padding: '24px', color: '#fff', fontFamily: 'sans-serif' }}>
-      <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '8px' }}>ELD & Hours of Service (HOS)</h1>
-      <p style={{ color: '#9ca3af', marginBottom: '24px' }}>Monitor compliance logs, driver duty availability, and real-time HOS tracking.</p>
+      <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '8px' }}>
+        {isEU ? 'EU Hours of Service (Regulation 561/2006)' : 'ELD & Hours of Service (HOS)'}
+      </h1>
+      <p style={{ color: '#9ca3af', marginBottom: '24px' }}>
+        {isEU 
+          ? `Monitor EU driving times, mandatory rest breaks, and compliance logs (${region}).` 
+          : `Monitor compliance logs, driver duty availability, and real-time HOS tracking (${region}).`}
+      </p>
 
       {/* Simulator Form */}
       <div style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: '12px', padding: '20px', marginBottom: '24px' }}>
@@ -79,7 +103,7 @@ export const HosLogsDashboard: React.FC = () => {
               <option value="DRIVING">Driving</option>
               <option value="ON_DUTY">On Duty</option>
               <option value="OFF_DUTY">Off Duty</option>
-              <option value="SLEEPER">Sleeper Berth</option>
+              <option value="SLEEPER">{isEU ? 'Rest / Break' : 'Sleeper Berth'}</option>
             </select>
           </div>
 
@@ -98,7 +122,7 @@ export const HosLogsDashboard: React.FC = () => {
             <label style={{ display: 'block', color: '#9ca3af', fontSize: '12px', marginBottom: '6px' }}>Current Location</label>
             <input
               type="text"
-              defaultValue="Chicago, IL"
+              defaultValue={isEU ? 'Frankfurt, Germany' : 'Chicago, IL'}
               style={{ width: '100%', padding: '10px', background: '#1f2937', border: '1px solid #374151', color: '#fff', borderRadius: '6px' }}
             />
           </div>
@@ -108,7 +132,7 @@ export const HosLogsDashboard: React.FC = () => {
               type="submit"
               style={{ padding: '10px 20px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}
             >
-              Record ELD Event
+              Record {isEU ? 'EU Tachograph Event' : 'ELD Event'}
             </button>
           </div>
         </form>

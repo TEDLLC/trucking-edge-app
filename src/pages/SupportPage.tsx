@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useRegionStore } from '../services/useRegion';
 
 interface FaqItem {
   question: string;
@@ -7,27 +8,39 @@ interface FaqItem {
 }
 
 export const SupportPage: React.FC = () => {
+  const { region } = useRegionStore();
+  const isEU = region === 'EU' || region?.includes('EU');
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [ticketSubject, setTicketSubject] = useState('');
   const [ticketMessage, setTicketMessage] = useState('');
   const [ticketSubmitted, setTicketSubmitted] = useState(false);
 
+  const dispatchCategory = isEU ? 'Dispatch & RPK' : 'Dispatch & RPM';
+  const complianceCategory = isEU ? 'Tachograph & Compliance' : 'ELD & Compliance';
+
   const faqs: FaqItem[] = [
     {
-      category: 'Dispatch & RPM',
-      question: 'How is Rate Per Mile (RPM) calculated?',
-      answer: 'RPM is automatically computed by dividing your Gross Rate by the Total Miles entered for the active dispatch (Gross Rate ÷ Total Miles).'
+      category: dispatchCategory,
+      question: isEU ? 'How is Rate Per Kilometer (RPK) calculated?' : 'How is Rate Per Mile (RPM) calculated?',
+      answer: isEU 
+        ? 'RPK is automatically computed by dividing your Gross Rate by the Total Kilometers entered for the active dispatch (Gross Rate ÷ Total Kilometers).' 
+        : 'RPM is automatically computed by dividing your Gross Rate by the Total Miles entered for the active dispatch (Gross Rate ÷ Total Miles).'
     },
     {
-      category: 'Dispatch & RPM',
+      category: dispatchCategory,
       question: 'Can I assign multiple drivers to a single load?',
-      answer: 'Currently, the system supports assigning one primary driver per active dispatch to ensure precise ELD and route tracking.'
+      answer: isEU 
+        ? 'Currently, the system supports assigning one primary driver per active dispatch to ensure precise tachograph and route tracking.' 
+        : 'Currently, the system supports assigning one primary driver per active dispatch to ensure precise ELD and route tracking.'
     },
     {
-      category: 'ELD & Compliance',
-      question: 'Are Hours of Service (HOS) logs updated in real time?',
-      answer: 'Yes, driver status updates made via the ELD logs page sync immediately across your dispatcher overview.'
+      category: complianceCategory,
+      question: isEU ? 'Are EU driving and rest time logs updated in real time?' : 'Are Hours of Service (HOS) logs updated in real time?',
+      answer: isEU 
+        ? 'Yes, driver status updates made via the EU tachograph logs page sync immediately across your dispatcher overview.' 
+        : 'Yes, driver status updates made via the ELD logs page sync immediately across your dispatcher overview.'
     },
     {
       category: 'Billing & Account',
@@ -36,7 +49,7 @@ export const SupportPage: React.FC = () => {
     },
   ];
 
-  const categories = ['All', 'Dispatch & RPM', 'ELD & Compliance', 'Billing & Account'];
+  const categories = ['All', dispatchCategory, complianceCategory, 'Billing & Account'];
 
   const filteredFaqs = faqs.filter(faq => {
     const matchesCategory = selectedCategory === 'All' || faq.category === selectedCategory;
@@ -58,12 +71,18 @@ export const SupportPage: React.FC = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* Header Banner */}
       <div style={{ background: 'linear-gradient(135deg, #0b1329 0%, #1e293b 100%)', border: '1px solid #1e293b', borderRadius: '12px', padding: '32px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.2)' }}>
-        <h1 style={{ color: '#f8fafc', fontSize: '1.75rem', fontWeight: 700, margin: '0 0 8px 0' }}>Support & Knowledge Center</h1>
-        <p style={{ color: '#94a3b8', fontSize: '0.95rem', margin: '0 0 20px 0' }}>Find quick answers to common questions or reach out to our enterprise dispatch support team.</p>
+        <h1 style={{ color: '#f8fafc', fontSize: '1.75rem', fontWeight: 700, margin: '0 0 8px 0' }}>
+          {isEU ? 'EU Support & Knowledge Center' : 'Support & Knowledge Center'}
+        </h1>
+        <p style={{ color: '#94a3b8', fontSize: '0.95rem', margin: '0 0 20px 0' }}>
+          {isEU 
+            ? 'Find quick answers to common European transport questions or reach out to our support team.' 
+            : 'Find quick answers to common questions or reach out to our enterprise dispatch support team.'}
+        </p>
         
         <input 
           type="text" 
-          placeholder="Search knowledge base (e.g. RPM, ELD, drivers)..." 
+          placeholder={isEU ? "Search knowledge base (e.g. RPK, tachograph, drivers)..." : "Search knowledge base (e.g. RPM, ELD, drivers)..."} 
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           style={{ width: '100%', maxWidth: '600px', background: '#020617', border: '1px solid #334155', borderRadius: '8px', padding: '12px 16px', color: '#f8fafc', outline: 'none', fontSize: '0.95rem' }}

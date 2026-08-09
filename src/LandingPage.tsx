@@ -1,103 +1,118 @@
 import React from 'react';
 
 interface LandingPageProps {
-  onGuestLogin: () => void;
-  onAccessCommandCenter?: () => void;
+  onOpenAuth?: (region: 'US (FMCSA)' | 'EU (561/2006)') => void;
 }
 
-export default function LandingPage({ onGuestLogin, onAccessCommandCenter }: LandingPageProps) {
+export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
   return (
-    <div style={{ minHeight: '100vh', background: '#090d16', color: '#f8fafc', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif', boxSizing: 'border-box' }}>
-      
-      {/* Navigation Bar */}
-      <nav style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 48px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', background: '#111827', position: 'sticky', top: 0, zIndex: 100 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span style={{ fontSize: '1.5rem' }}>🚛</span>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: '700', letterSpacing: '-0.025em', margin: 0, color: '#fff' }}>TRUCKING EDGE</h2>
+    /* Force min-h-screen and visible vertical overflow so parent layouts scroll freely */
+    <div className="min-h-screen w-full bg-slate-950 text-slate-100 font-sans relative overflow-y-visible pb-24">
+      {/* Navigation Header */}
+      <header className="w-full max-w-7xl mx-auto px-6 py-6 flex justify-between items-center">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center font-bold text-white shadow-lg shadow-indigo-500/30">
+            🚛
+          </div>
+          <span className="text-xl font-bold tracking-tight text-white">
+            Trucking Edge
+          </span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+
+        <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-400">
+          <a href="#features" className="hover:text-white transition-colors">Features</a>
+          <a href="#portals" className="hover:text-white transition-colors">Portals</a>
+          <a href="#pricing" className="hover:text-white transition-colors">Pricing</a>
+        </nav>
+
+        <div className="flex items-center gap-4">
           <button 
-            onClick={onGuestLogin}
-            style={{ background: 'transparent', color: '#cbd5e1', border: '1px solid #374151', padding: '8px 16px', borderRadius: '6px', fontWeight: '600', fontSize: '0.875rem', cursor: 'pointer', transition: 'all 0.2s' }}
+            onClick={() => onOpenAuth?.('US (FMCSA)')}
+            className="text-sm font-medium text-slate-300 hover:text-white transition-colors"
           >
-            Guest Portal
+            Sign In
           </button>
-          {onAccessCommandCenter && (
-            <button 
-              onClick={onAccessCommandCenter}
-              style={{ background: '#2563eb', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: '600', fontSize: '0.875rem', cursor: 'pointer', transition: 'background 0.2s' }}
-            >
-              Sign In
-            </button>
-          )}
+          <button 
+            onClick={() => onOpenAuth?.('US (FMCSA)')}
+            className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg transition-all shadow-md shadow-indigo-600/20"
+          >
+            Get Started
+          </button>
         </div>
-      </nav>
+      </header>
 
       {/* Hero Section */}
-      <section style={{ maxWidth: '1200px', margin: '0 auto', padding: '80px 24px', textAlign: 'center' }}>
-        <div style={{ display: 'inline-block', background: 'rgba(37, 99, 235, 0.1)', color: '#38bdf8', padding: '6px 14px', borderRadius: '20px', fontSize: '0.8125rem', fontWeight: '600', marginBottom: '24px', border: '1px solid rgba(56, 189, 248, 0.2)' }}>
-          🚀 Next-Generation Enterprise Fleet TMS & Dispatch
+      <section className="max-w-5xl mx-auto px-6 pt-16 pb-20 text-center">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-950/80 border border-indigo-800/50 text-indigo-300 text-xs font-semibold uppercase tracking-wider mb-8">
+          ⚡ Next-Gen Carrier OS v2.0
         </div>
-        <h1 style={{ fontSize: 'clamp(2.5rem, 5vw, 4rem)', fontWeight: '800', letterSpacing: '-0.025em', margin: '0 0 20px 0', lineHeight: '1.1', color: '#f8fafc' }}>
-          Maximize Your Fleet RPM & <span style={{ color: '#38bdf8' }}>Streamline Dispatch</span>
+
+        <h1 className="text-4xl md:text-6xl font-black text-white tracking-tight leading-tight mb-6">
+          Global Freight & Dispatch <br className="hidden md:block" />
+          Management for <span className="bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">US & EU Fleets</span>
         </h1>
-        <p style={{ fontSize: '1.125rem', color: '#94a3b8', maxWidth: '700px', margin: '0 auto 40px auto', lineHeight: '1.6' }}>
-          Trucking Edge empowers independent carriers and dispatchers with live MC search tools, automated IFTA tracking, profit calculator suites, and seamless load management.
+
+        <p className="max-w-2xl mx-auto text-slate-400 text-base md:text-lg mb-10 leading-relaxed">
+          Automate dispatches, calculate real-time Rate Per Mile / Kilometer, manage driver HOS compliance, and handle tax reporting in one unified platform.
         </p>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', flexWrap: 'wrap' }}>
-          <button 
-            onClick={onGuestLogin}
-            style={{ background: '#2563eb', color: '#fff', border: 'none', padding: '14px 28px', borderRadius: '8px', fontWeight: '600', fontSize: '1rem', cursor: 'pointer', boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)', transition: 'background 0.2s' }}
+
+        <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mb-12">
+          <button
+            onClick={() => onOpenAuth?.('US (FMCSA)')}
+            className="w-full sm:w-auto px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
-            Explore Interactive Portal
+            Enter US Portal (FMCSA) →
           </button>
-          {onAccessCommandCenter && (
-            <button 
-              onClick={onAccessCommandCenter}
-              style={{ background: '#1f2937', color: '#f8fafc', border: '1px solid #374151', padding: '14px 28px', borderRadius: '8px', fontWeight: '600', fontSize: '1rem', cursor: 'pointer', transition: 'background 0.2s' }}
-            >
-              Enterprise Login
-            </button>
-          )}
+          <button
+            onClick={() => onOpenAuth?.('EU (561/2006)')}
+            className="w-full sm:w-auto px-8 py-4 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl shadow-lg shadow-purple-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
+          >
+            Enter EU Portal (561/2006) →
+          </button>
+        </div>
+
+        <div className="flex flex-wrap justify-center gap-6 text-xs text-slate-400">
+          <span className="flex items-center gap-1.5"><span className="text-emerald-400">✓</span> No credit card required</span>
+          <span className="flex items-center gap-1.5"><span className="text-emerald-400">✓</span> FMCSA & EU 561/2006 Compliant</span>
         </div>
       </section>
 
-      {/* Feature Grid Overview */}
-      <section style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 24px 80px 24px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
-          
-          <div style={{ background: '#111827', padding: '32px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-            <div style={{ fontSize: '2rem', marginBottom: '16px' }}>📊</div>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: '600', margin: '0 0 10px 0', color: '#fff' }}>Live RPM & Profitability</h3>
-            <p style={{ color: '#94a3b8', fontSize: '0.875rem', lineHeight: '1.5', margin: 0 }}>
-              Calculate net profit per mile instantly by factoring in fuel burn, empty deadhead miles, and operational costs.
+      {/* Feature Section Grid */}
+      <section id="features" className="max-w-7xl mx-auto px-6 py-16 border-t border-slate-800/80">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="p-8 rounded-2xl bg-slate-900/60 border border-slate-800/80">
+            <div className="w-12 h-12 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center text-xl mb-6">
+              📊
+            </div>
+            <h3 className="text-xl font-bold text-white mb-3">Rate & RPM Analytics</h3>
+            <p className="text-slate-400 text-sm leading-relaxed">
+              Calculate exact profit margins per load across miles or kilometers before confirming dispatches.
             </p>
           </div>
 
-          <div style={{ background: '#111827', padding: '32px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-            <div style={{ fontSize: '2rem', marginBottom: '16px' }}>⛽</div>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: '600', margin: '0 0 10px 0', color: '#fff' }}>Interactive Fuel Mapping</h3>
-            <p style={{ color: '#94a3b8', fontSize: '0.875rem', lineHeight: '1.5', margin: 0 }}>
-              Locate nearby travel centers, filter diesel prices across interstate corridors, and optimize your fueling stops.
+          <div className="p-8 rounded-2xl bg-slate-900/60 border border-slate-800/80">
+            <div className="w-12 h-12 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center text-xl mb-6">
+              🛡️
+            </div>
+            <h3 className="text-xl font-bold text-white mb-3">Dual-Region Compliance</h3>
+            <p className="text-slate-400 text-sm leading-relaxed">
+              Native support for US FMCSA 70-hour cycles and EU 561/2006 driving time limits.
             </p>
           </div>
 
-          <div style={{ background: '#111827', padding: '32px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-            <div style={{ fontSize: '2rem', marginBottom: '16px' }}>🏛️</div>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: '600', margin: '0 0 10px 0', color: '#fff' }}>Compliance & IFTA Support</h3>
-            <p style={{ color: '#94a3b8', fontSize: '0.875rem', lineHeight: '1.5', margin: 0 }}>
-              Keep track of driver hours of service (HOS), ELD records, state fuel mileage summaries, and seamless tax reporting.
+          <div className="p-8 rounded-2xl bg-slate-900/60 border border-slate-800/80">
+            <div className="w-12 h-12 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center text-xl mb-6">
+              🧾
+            </div>
+            <h3 className="text-xl font-bold text-white mb-3">IFTA & Tax Reporting</h3>
+            <p className="text-slate-400 text-sm leading-relaxed">
+              Automatically track jurisdiction miles and fuel logs for simple end-of-quarter tax filings.
             </p>
           </div>
-
         </div>
       </section>
-
-      {/* Footer */}
-      <footer style={{ borderTop: '1px solid rgba(255, 255, 255, 0.08)', padding: '24px 48px', textAlign: 'center', background: '#111827', color: '#94a3b8', fontSize: '0.8125rem' }}>
-        <p style={{ margin: 0 }}>© 2026 Trucking Edge Dispatch Systems. All rights reserved.</p>
-      </footer>
-
     </div>
   );
-}
+};
+
+export default LandingPage;

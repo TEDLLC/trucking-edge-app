@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface PaymentLog {
   id: string;
@@ -10,10 +10,29 @@ interface PaymentLog {
 }
 
 export const BillingPage: React.FC = () => {
+  const [regionMode, setRegionMode] = useState<string>(() => {
+    return localStorage.getItem('regionMode') || 'US (FMCSA)';
+  });
+
+  // Sync with region changes made elsewhere in the app
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const stored = localStorage.getItem('regionMode');
+      if (stored) setRegionMode(stored);
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  const isEU = regionMode.includes('EU');
+  const currencySymbol = isEU ? '€' : '$';
+  const monthlyAmount = isEU ? '€139.00' : '$149.00';
+  const addonAmount = isEU ? '€45.00' : '$49.00';
+
   const [logs, setLogs] = useState<PaymentLog[]>([
-    { id: 'PAY-1092', date: '2026-08-01', description: 'Enterprise Monthly Subscription', amount: '$149.00', method: 'Visa ending in •••• 4242', status: 'Paid' },
-    { id: 'PAY-1045', date: '2026-07-01', description: 'Enterprise Monthly Subscription', amount: '$149.00', method: 'Visa ending in •••• 4242', status: 'Paid' },
-    { id: 'PAY-0982', date: '2026-06-01', description: 'Enterprise Monthly Subscription', amount: '$149.00', method: 'Visa ending in •••• 4242', status: 'Paid' }
+    { id: 'PAY-1092', date: '2026-08-01', description: 'Enterprise Monthly Subscription', amount: monthlyAmount, method: 'Visa ending in •••• 4242', status: 'Paid' },
+    { id: 'PAY-1045', date: '2026-07-01', description: 'Enterprise Monthly Subscription', amount: monthlyAmount, method: 'Visa ending in •••• 4242', status: 'Paid' },
+    { id: 'PAY-0982', date: '2026-06-01', description: 'Enterprise Monthly Subscription', amount: monthlyAmount, method: 'Visa ending in •••• 4242', status: 'Paid' }
   ]);
 
   const [cardAdded, setCardAdded] = useState(false);
@@ -22,8 +41,8 @@ export const BillingPage: React.FC = () => {
     const newLog: PaymentLog = {
       id: `PAY-${Math.floor(1000 + Math.random() * 9000)}`,
       date: new Date().toISOString().split('T')[0],
-      description: 'DAT & Truckstop API Add-on Pack',
-      amount: '$49.00',
+      description: isEU ? 'EU Compliance & Telematics Add-on Pack' : 'DAT & Truckstop API Add-on Pack',
+      amount: addonAmount,
       method: 'Mastercard ending in •••• 8811',
       status: 'Paid'
     };
@@ -35,7 +54,7 @@ export const BillingPage: React.FC = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <div>
           <h2 style={{ fontSize: '1.8rem', fontWeight: 'bold', marginBottom: '4px' }}>Billing & Payment Logs</h2>
-          <p style={{ color: '#94a3b8' }}>Review subscription invoices and payment transaction history.</p>
+          <p style={{ color: '#94a3b8' }}>Review subscription invoices and payment transaction history ({regionMode}).</p>
         </div>
         <button onClick={handleSimulatePayment} style={{ background: '#10b981', color: '#fff', border: 'none', padding: '10px 16px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
           + Pay New Invoice
@@ -46,7 +65,9 @@ export const BillingPage: React.FC = () => {
       <div style={{ background: 'linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%)', border: '1px solid #4338ca', borderRadius: '12px', padding: '24px', marginBottom: '28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <span style={{ background: '#4338ca', color: '#c7d2fe', padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 'bold' }}>Active Plan</span>
-          <h3 style={{ fontSize: '1.4rem', fontWeight: 'bold', marginTop: '10px' }}>Enterprise Tier ($149/mo)</h3>
+          <h3 style={{ fontSize: '1.4rem', fontWeight: 'bold', marginTop: '10px' }}>
+            Enterprise Tier ({monthlyAmount}/mo)
+          </h3>
           <p style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Next automatic billing date: September 1, 2026</p>
         </div>
         <button onClick={() => setCardAdded(true)} style={{ background: '#38bdf8', color: '#0f172a', border: 'none', padding: '10px 16px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>

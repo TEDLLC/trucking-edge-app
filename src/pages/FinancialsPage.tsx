@@ -1,8 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { getFinancials, createExpense } from '../services/api';
+import { useRegionStore } from '../services/useRegion';
 import type { FinancialSummary, Expense } from '../services/api';
 
 export function FinancialsPage() {
+  const { region } = useRegionStore();
+  const isEU = region === 'EU' || region?.includes('EU');
+  const currencySymbol = isEU ? '€' : '$';
+
   const [financials, setFinancials] = useState<FinancialSummary>({
     totalRevenue: 0,
     totalExpenses: 0,
@@ -57,26 +62,26 @@ export function FinancialsPage() {
   return (
     <div style={{ color: '#f8fafc' }}>
       <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '8px' }}>Profit & Loss Financial Tracker</h2>
-      <p style={{ color: '#94a3b8', marginBottom: '24px' }}>Analyze gross revenue, operating costs, net margins, and ledger expenses.</p>
+      <p style={{ color: '#94a3b8', marginBottom: '24px' }}>Analyze gross revenue, operating costs, net margins, and ledger expenses ({region}).</p>
 
       {/* Financial Summary KPI Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '28px' }}>
         <div style={{ background: '#090d16', padding: '20px', borderRadius: '12px', border: '1px solid #1e293b' }}>
           <div style={{ fontSize: '0.85rem', color: '#94a3b8', marginBottom: '6px' }}>Gross Revenue</div>
           <div style={{ fontSize: '1.75rem', fontWeight: '700', color: '#4ade80' }}>
-            ${financials.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {currencySymbol}{financials.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
         </div>
         <div style={{ background: '#090d16', padding: '20px', borderRadius: '12px', border: '1px solid #1e293b' }}>
           <div style={{ fontSize: '0.85rem', color: '#94a3b8', marginBottom: '6px' }}>Total Operating Expenses</div>
           <div style={{ fontSize: '1.75rem', fontWeight: '700', color: '#ef4444' }}>
-            ${financials.totalExpenses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {currencySymbol}{financials.totalExpenses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
         </div>
         <div style={{ background: '#090d16', padding: '20px', borderRadius: '12px', border: '1px solid #1e293b' }}>
           <div style={{ fontSize: '0.85rem', color: '#94a3b8', marginBottom: '6px' }}>Net Profit</div>
           <div style={{ fontSize: '1.75rem', fontWeight: '700', color: '#38bdf8' }}>
-            ${financials.netProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {currencySymbol}{financials.netProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
         </div>
         <div style={{ background: '#090d16', padding: '20px', borderRadius: '12px', border: '1px solid #1e293b' }}>
@@ -103,7 +108,7 @@ export function FinancialsPage() {
             <input type="text" placeholder="e.g. Brake replacement #05" value={description} onChange={(e) => setDescription(e.target.value)} required style={{ width: '100%', padding: '10px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff', outline: 'none' }} />
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '6px' }}>Amount ($)</label>
+            <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '6px' }}>Amount ({currencySymbol})</label>
             <input type="number" step="0.01" placeholder="e.g. 650.00" value={amount} onChange={(e) => setAmount(e.target.value)} required style={{ width: '100%', padding: '10px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff', outline: 'none' }} />
           </div>
         </div>
@@ -135,7 +140,7 @@ export function FinancialsPage() {
                   <td style={{ padding: '14px 16px', fontWeight: 'bold' }}>{item.id.slice(0, 8)}...</td>
                   <td style={{ padding: '14px 16px', color: '#38bdf8' }}>{item.category}</td>
                   <td style={{ padding: '14px 16px', color: '#fff' }}>{item.description}</td>
-                  <td style={{ padding: '14px 16px', color: '#ef4444', fontWeight: 'bold' }}>${item.amount.toFixed(2)}</td>
+                  <td style={{ padding: '14px 16px', color: '#ef4444', fontWeight: 'bold' }}>{currencySymbol}{item.amount.toFixed(2)}</td>
                   <td style={{ padding: '14px 16px', color: '#94a3b8' }}>{new Date(item.date).toLocaleDateString()}</td>
                 </tr>
               ))}

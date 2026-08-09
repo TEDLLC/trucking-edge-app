@@ -1,46 +1,50 @@
-// GET all loads (including assigned driver and truck details)
-app.get('/api/loads', async (req, res) => {
-  try {
-    const loads = await prisma.load.findMany({
-      include: {
-        driver: true,
-        truck: true,
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-    res.json(loads);
-  } catch (error) {
-    console.error('Error fetching loads:', error);
-    res.status(500).json({ error: 'Failed to fetch loads' });
+import express from 'express';
+import cors from 'cors';
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+
+// Centralized in-memory compliance database simulation
+let complianceLogs = [
+  { id: '1', region: 'US', driverName: 'John Doe', status: 'DRIVING', hours: 8.5, location: 'Chicago, IL', date: new Date().toISOString() },
+  { id: '2', region: 'EU', driverName: 'Janis Kask', status: 'REST', hours: 4.5, location: 'Berlin, DE', date: new Date().toISOString() }
+];
+
+// API Routes
+app.get('/api/logs', (req, res) => {
+  const { region } = req.query;
+  if (region) {
+    return res.json(complianceLogs.filter(l => l.region === region));
   }
+  res.json(complianceLogs);
 });
 
-// CREATE a new load
-app.post('/api/loads', async (req, res) => {
-  try {
-    const { loadNumber, shipper, origin, destination, rate, status, driverId, truckId, pickupDate, deliveryDate } = req.body;
-    
-    const newLoad = await prisma.load.create({
-      data: {
-        loadNumber,
-        shipper,
-        origin,
-        destination,
-        rate: parseFloat(rate),
-        status: status || 'PENDING',
-        driverId: driverId || null,
-        truckId: truckId || null,
-        pickupDate: new Date(pickupDate),
-        deliveryDate: new Date(deliveryDate),
-      },
-      include: {
-        driver: true,
-        truck: true,
-      },
-    });
-    res.json(newLoad);
-  } catch (error) {
-    console.error('Error creating load:', error);
-    res.status(500).json({ error: 'Failed to create load' });
-  }
+app.post('/api/logs', (req, res) => {
+  const newLog = {
+    id: 'log-' + Date.now(),
+    region: req.body.region || 'US',
+    driverName: req.body.driverName || 'Unknown Driver',
+    status: req.body.status || 'DRIVING',
+    hours: req.body.hours || 0,
+    location: req.body.location || 'Unknown Location',
+    date: new Date().toISOString()
+  };
+  complianceLogs.unshift(newLog);
+  res.status(201).json(newLog);
+});
+
+app.get('/api/loads', (req, res) => {
+  res.json([
+    { id: 1, loadNumber: 'LD-1001', origin: 'Chicago, IL', destination: 'Detroit, MI', status: 'In Transit' },
+    { id: 2, loadNumber: 'LD-1002', origin: 'Dallas, TX', destination: 'Houston, TX', status: 'Delivered' }
+  ]);
+});
+
+// Start Server
+app.listen(PORT, () => {
+  console.log(`Backend server running on http://localhost:${PORT}`);
 });

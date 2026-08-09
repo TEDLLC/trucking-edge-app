@@ -1,4 +1,5 @@
 import React from 'react';
+import { RegionToggle } from './RegionToggle';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -10,7 +11,7 @@ export default function AppLayout({ children, activeTab, setActiveTab }: AppLayo
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex font-sans antialiased selection:bg-indigo-500 selection:text-white">
       
-      {/* Sidebar Navigation */}
+      {/* Primary Sidebar Navigation */}
       <aside className="w-64 bg-slate-900/80 border-r border-slate-800/80 flex flex-col justify-between shrink-0 hidden lg:flex backdrop-blur-md">
         <div className="p-6">
           <div className="flex items-center gap-3 mb-8">
@@ -25,7 +26,6 @@ export default function AppLayout({ children, activeTab, setActiveTab }: AppLayo
 
           <nav className="space-y-1">
             {[
-              { id: 'portal', label: 'Portal Hub & Tools', icon: '⚡' },
               { id: 'dispatch', label: 'Dispatch & RPM', icon: '📊' },
               { id: 'roster', label: 'Driver Roster & HOS', icon: '👤' },
               { id: 'eld', label: 'ELD / HOS Logs', icon: '🕒' },
@@ -65,6 +65,7 @@ export default function AppLayout({ children, activeTab, setActiveTab }: AppLayo
           </div>
           
           <div className="flex items-center gap-3 text-xs">
+            <RegionToggle />
             <div className="bg-slate-950/60 border border-slate-800 px-3 py-1.5 rounded-lg text-slate-300 flex items-center gap-2">
               <span className="text-slate-500">Fleet Time Zone:</span>
               <span className="font-medium text-white">Central Time (CT)</span>

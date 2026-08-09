@@ -1,4 +1,10 @@
 import React, { useState } from 'react';
+import type { Driver } from '../components/EnterpriseDashboard';
+
+interface DriversPageProps {
+  drivers: Driver[];
+  onAddDriver: (newDriver: Driver) => void;
+}
 
 interface DriverRoster {
   id: string;
@@ -10,8 +16,8 @@ interface DriverRoster {
   lastBorderCrossing: string;
 }
 
-export function DriversPage() {
-  const [drivers, setDrivers] = useState<DriverRoster[]>([
+export function DriversPage({ drivers: parentDrivers, onAddDriver: parentAddDriver }: DriversPageProps) {
+  const [rosterDrivers, setRosterDrivers] = useState<DriverRoster[]>([
     {
       id: 'DRV-101',
       name: 'Hans Müller',
@@ -45,11 +51,11 @@ export function DriversPage() {
   const [cardNumber, setCardNumber] = useState('');
   const [cardExpiry, setCardExpiry] = useState('');
 
-  const handleAddDriver = (e: React.FormEvent) => {
+  const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !cardNumber) return;
 
-    const newDriver: DriverRoster = {
+    const newRosterDriver: DriverRoster = {
       id: `DRV-${Math.floor(100 + Math.random() * 900)}`,
       name,
       cardNumber,
@@ -59,7 +65,17 @@ export function DriversPage() {
       lastBorderCrossing: 'None'
     };
 
-    setDrivers([...drivers, newDriver]);
+    setRosterDrivers([...rosterDrivers, newRosterDriver]);
+
+    parentAddDriver({
+      id: newRosterDriver.id,
+      name: newRosterDriver.name,
+      truck: 'Truck-01',
+      phone: '+15550199',
+      license: newRosterDriver.cardNumber,
+      status: 'Active'
+    });
+
     setName('');
     setCardNumber('');
     setCardExpiry('');
@@ -87,10 +103,9 @@ export function DriversPage() {
         </p>
       </div>
 
-      {/* Add New Driver Card Form */}
       <div style={{ background: '#0b1329', border: '1px solid #1e293b', borderRadius: '12px', padding: '20px', marginBottom: '24px' }}>
         <h3 style={{ margin: '0 0 14px 0', color: '#38bdf8', fontSize: '1rem' }}>Register Driver Card</h3>
-        <form onSubmit={handleAddDriver} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+        <form onSubmit={handleFormSubmit} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
           <div>
             <label style={{ color: '#94a3b8', fontSize: '0.75rem', display: 'block', marginBottom: '4px' }}>Full Name</label>
             <input
@@ -133,7 +148,6 @@ export function DriversPage() {
         </form>
       </div>
 
-      {/* Roster Table */}
       <div style={{ background: '#0b1329', border: '1px solid #1e293b', borderRadius: '12px', padding: '20px' }}>
         <h3 style={{ margin: '0 0 16px 0', color: '#f8fafc', fontSize: '1rem' }}>Active Driver Card Compliance Roster</h3>
         <div style={{ overflowX: 'auto' }}>
@@ -150,7 +164,7 @@ export function DriversPage() {
               </tr>
             </thead>
             <tbody>
-              {drivers.map((d) => (
+              {rosterDrivers.map((d) => (
                 <tr key={d.id} style={{ borderBottom: '1px solid #1e293b' }}>
                   <td style={{ padding: '10px', fontWeight: 'bold', color: '#38bdf8' }}>{d.id}</td>
                   <td style={{ padding: '10px', fontWeight: 600, color: '#fff' }}>{d.name}</td>

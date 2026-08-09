@@ -32,7 +32,16 @@ export const App: React.FC = () => {
 
   // App Level State for pages requiring props
   const [loads, setLoads] = useState<any[]>([]);
-  const [drivers, setDrivers] = useState<any[]>([]);
+  const [drivers, setDrivers] = useState<any[]>([
+    {
+      id: 'DRV-101',
+      name: 'Hans Müller',
+      truck: 'Truck-01',
+      phone: '+15550199',
+      license: 'E1234567890000',
+      status: 'Active'
+    }
+  ]);
   const [fuelLogs, setFuelLogs] = useState<any[]>([]);
 
   useEffect(() => {
@@ -82,6 +91,10 @@ export const App: React.FC = () => {
     );
   };
 
+  const handleAddDriver = (newDriver: any) => {
+    setDrivers((prev) => [...prev, newDriver]);
+  };
+
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-slate-950 text-white">
@@ -103,9 +116,9 @@ export const App: React.FC = () => {
           />
         );
       case 'drivers':
-        return <DriversPage />;
+        return <DriversPage drivers={drivers} onAddDriver={handleAddDriver} />;
       case 'eld':
-        return <EldPage />;
+        return <EldPage drivers={drivers} />;
       case 'hos':
         return <HosLogsDashboard />;
       case 'fuel':

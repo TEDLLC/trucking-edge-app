@@ -5,8 +5,13 @@ import { EUComplianceModule } from '../components/EUComplianceModule';
 import { EuViolationAlert } from '../components/EuViolationAlert';
 import { EuDddExport } from '../components/EuDddExport';
 import { EuBorderCrossingLog } from '../components/EuBorderCrossingLog';
+import type { Driver } from '../components/EnterpriseDashboard';
 
-export function EldPage() {
+interface EldPageProps {
+  drivers?: Driver[];
+}
+
+export function EldPage({ drivers: parentDrivers }: EldPageProps) {
   const { region } = useRegionStore();
   
   // Track region state directly from localStorage so it re-renders immediately on toggle
@@ -36,13 +41,15 @@ export function EldPage() {
     { id: '1', driverName: 'John Doe', status: 'DRIVING', hours: 8.5, location: 'Chicago, IL', date: new Date().toISOString() }
   ]);
 
-  const [drivers] = useState([
-    { id: 'driver-001', firstName: 'John', lastName: 'Doe' },
-    { id: 'driver-002', firstName: 'Sarah', lastName: 'Jenkins' },
-    { id: 'driver-003', firstName: 'Mike', lastName: 'Ross' }
-  ]);
+  const fallbackDrivers: Array<{ id: string; name: string }> = [
+    { id: 'driver-001', name: 'John Doe' },
+    { id: 'driver-002', name: 'Sarah Jenkins' },
+    { id: 'driver-003', name: 'Mike Ross' }
+  ];
 
-  const [driverName, setDriverName] = useState('John Doe');
+  const activeDrivers = parentDrivers && parentDrivers.length > 0 ? parentDrivers : fallbackDrivers;
+
+  const [driverName, setDriverName] = useState(activeDrivers[0]?.name || 'John Doe');
   const [status, setStatus] = useState('DRIVING');
   const [hours, setHours] = useState('11.0');
   const [location, setLocation] = useState('Chicago, IL');
@@ -102,9 +109,9 @@ export function EldPage() {
                   onChange={(e) => setDriverName(e.target.value)} 
                   style={{ width: '100%', padding: '10px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff', outline: 'none' }}
                 >
-                  {drivers.map((d) => {
-                    const fullName = `${d.firstName} ${d.lastName}`;
-                    return <option key={d.id} value={fullName}>{fullName}</option>;
+                  {activeDrivers.map((d) => {
+                    const name = d.name;
+                    return <option key={d.id} value={name}>{name}</option>;
                   })}
                 </select>
               </div>

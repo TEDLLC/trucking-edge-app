@@ -10,9 +10,9 @@ import { BillingPage } from '../pages/BillingPage';
 import { LoadBoardIntegrationPage } from '../pages/LoadBoardIntegrationPage';
 import { SupportPage } from '../pages/SupportPage';
 import { UserProfileMenu } from './UserProfileMenu';
-import { MarketingBanner } from './MarketingBanner'; // Import header banner
+import { MarketingBanner } from './MarketingBanner';
 
-interface Driver {
+export interface Driver {
   id: string;
   name: string;
   truck: string;
@@ -21,7 +21,7 @@ interface Driver {
   status: 'Active' | 'On Delivery' | 'Off Duty';
 }
 
-interface Load {
+export interface Load {
   id: string;
   origin: string;
   destination: string;
@@ -37,7 +37,8 @@ interface EnterpriseDashboardProps {
   loads: Load[];
   drivers: Driver[];
   onAddLoad: (newLoad: Load) => void;
-  onUpdateLoadStatus: (id: string, status: Load['status']) => void;
+  // Allow string or Load['status'] to prevent callback incompatibility with general string handlers
+  onUpdateLoadStatus: (id: string, status: any) => void;
 }
 
 export const EnterpriseDashboard: React.FC<EnterpriseDashboardProps> = ({

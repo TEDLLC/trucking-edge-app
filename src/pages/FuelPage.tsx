@@ -44,9 +44,10 @@ export const FuelPage: React.FC<FuelPageProps> = ({
   const volumeLabel = isEU ? 'Liters Purchased' : 'Gallons Purchased';
   const volumeUnit = isEU ? 'L' : 'gal';
 
-  const [jurisdiction, setJurisdiction] = useState(isEU ? 'DE' : 'TX');
+  const [jurisdiction, setJurisdiction] = useState(isEU ? 'DE - Frankfurt (60311)' : 'TX - Dallas (75201)');
   const [gallons, setGallons] = useState<string>(isEU ? '200' : '50');
   const [totalCost, setTotalCost] = useState<string>(isEU ? '350' : '200');
+  const [isLookingUp, setIsLookingUp] = useState<boolean>(false);
 
   const [internalReceipts, setInternalReceipts] = useState<FuelLog[]>(
     isEU 
@@ -80,6 +81,31 @@ export const FuelPage: React.FC<FuelPageProps> = ({
 
   const mileageMap = isEU ? euMileageMap : usMileageMap;
 
+  // Automatically fetch city & state when a 5-digit US ZIP code is typed
+  useEffect(() => {
+    const trimmed = jurisdiction.trim();
+    if (!isEU && /^\d{5}$/.test(trimmed)) {
+      setIsLookingUp(true);
+      fetch(`https://api.zippopotam.us/us/${trimmed}`)
+        .then((res) => {
+          if (res.ok) return res.json();
+          throw new Error('Not found');
+        })
+        .then((data) => {
+          if (data && data.places && data.places.length > 0) {
+            const place = data.places[0];
+            const cityName = place['place name'];
+            const stateAbbr = place['state abbreviation'];
+            setJurisdiction(`${stateAbbr} - ${cityName} (${trimmed})`);
+          }
+          setIsLookingUp(false);
+        })
+        .catch(() => {
+          setIsLookingUp(false);
+        });
+    }
+  }, [jurisdiction, isEU]);
+
   const handleRecord = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
@@ -87,13 +113,21 @@ export const FuelPage: React.FC<FuelPageProps> = ({
     const gNum = parseFloat(gallons);
     const cNum = parseFloat(totalCost);
 
-    if (isNaN(gNum) || isNaN(cNum) || gNum <= 0 || cNum <= 0) {
-      alert('Please enter valid numbers.');
+    if (!jurisdiction.trim()) {
+      alert('Please enter a valid jurisdiction, city, or ZIP code.');
       return;
     }
 
+    if (isNaN(gNum) || isNaN(cNum) || gNum <= 0 || cNum <= 0) {
+      alert('Please enter valid numbers for volume and cost.');
+      return;
+    }
+
+    // Extract the main state/country code (e.g. first token) for breakdown grouping
+    const cleanJurisdiction = jurisdiction.trim().split(' ')[0].toUpperCase();
+
     const newReceipt: FuelLog = {
-      jurisdiction,
+      jurisdiction: cleanJurisdiction,
       gallons: gNum,
       totalCost: cNum
     };
@@ -140,59 +174,23 @@ export const FuelPage: React.FC<FuelPageProps> = ({
 
       <div style={{ background: '#090d16', padding: '20px', borderRadius: '12px', border: '1px solid #1e293b', marginBottom: '24px' }}>
         <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '16px', color: '#38bdf8' }}>Log Fuel Purchase</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '16px' }}>
-          <div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '16px' }}>
+          <div style={{ gridColumn: 'span 2', position: 'relative' }}>
             <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '6px' }}>
-              {isEU ? 'Jurisdiction (Country)' : 'Jurisdiction (State)'}
+              {isEU ? 'Jurisdiction, City or Postal Code' : 'State, City or ZIP Code (Type ZIP for auto-fill)'}
             </label>
-            <select
+            <input
+              type="text"
               value={jurisdiction}
               onChange={(e) => setJurisdiction(e.target.value)}
+              placeholder={isEU ? "e.g. DE - Berlin (10115)" : "e.g. 75201 or TX - Dallas"}
               style={{ width: '100%', padding: '10px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff', outline: 'none' }}
-            >
-              {isEU ? (
-                <>
-                  <option value="AT">Austria (AT)</option>
-                  <option value="BE">Belgium (BE)</option>
-                  <option value="BG">Bulgaria (BG)</option>
-                  <option value="HR">Croatia (HR)</option>
-                  <option value="CY">Cyprus (CY)</option>
-                  <option value="CZ">Czech Republic (CZ)</option>
-                  <option value="DK">Denmark (DK)</option>
-                  <option value="EE">Estonia (EE)</option>
-                  <option value="FI">Finland (FI)</option>
-                  <option value="FR">France (FR)</option>
-                  <option value="DE">Germany (DE)</option>
-                  <option value="GR">Greece (GR)</option>
-                  <option value="HU">Hungary (HU)</option>
-                  <option value="IE">Ireland (IE)</option>
-                  <option value="IT">Italy (IT)</option>
-                  <option value="LV">Latvia (LV)</option>
-                  <option value="LT">Lithuania (LT)</option>
-                  <option value="LU">Luxembourg (LU)</option>
-                  <option value="MT">Malta (MT)</option>
-                  <option value="NL">Netherlands (NL)</option>
-                  <option value="NO">Norway (NO)</option>
-                  <option value="PL">Poland (PL)</option>
-                  <option value="PT">Portugal (PT)</option>
-                  <option value="RO">Romania (RO)</option>
-                  <option value="SK">Slovakia (SK)</option>
-                  <option value="SI">Slovenia (SI)</option>
-                  <option value="ES">Spain (ES)</option>
-                  <option value="SE">Sweden (SE)</option>
-                  <option value="CH">Switzerland (CH)</option>
-                  <option value="GB">United Kingdom (GB)</option>
-                </>
-              ) : (
-                <>
-                  <option value="TX">Texas (TX)</option>
-                  <option value="IL">Illinois (IL)</option>
-                  <option value="OH">Ohio (OH)</option>
-                  <option value="IN">Indiana (IN)</option>
-                  <option value="PA">Pennsylvania (PA)</option>
-                </>
-              )}
-            </select>
+            />
+            {isLookingUp && (
+              <span style={{ position: 'absolute', right: '12px', top: '35px', fontSize: '0.75rem', color: '#38bdf8' }}>
+                Looking up ZIP...
+              </span>
+            )}
           </div>
           <div>
             <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '6px' }}>{volumeLabel}</label>

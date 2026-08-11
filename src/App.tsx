@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import type { Session } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 import { useRegionStore, type UserRegion } from './services/useRegion';
 import { useUserStore, type UserRole } from './services/useUserStore';
@@ -21,7 +22,7 @@ import { SettingsPage } from './pages/SettingsPage';
 import { SupportPage } from './pages/SupportPage';
 
 export const App: React.FC = () => {
-  const [session, setSession] = useState<any>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [showAuth, setShowAuth] = useState(false);
   const [activeTab, setActiveTab] = useState('loads');
@@ -50,7 +51,7 @@ export const App: React.FC = () => {
       setLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: string, session: Session | null) => {
       setSession(session);
       setLoading(false);
     });

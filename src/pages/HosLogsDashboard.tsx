@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { evaluateHosCompliance, type HosStatusPayload } from '../utils/hosService';
+import { evaluateHosCompliance } from '../utils/hosService';
 import { logAuditAction } from '../utils/auditLogger';
 import { useRegionStore } from '../services/useRegion';
 
@@ -13,17 +13,17 @@ export const HosLogsDashboard: React.FC = () => {
     { id: 'driver-003', name: 'Mike Ross (Truck #312)' }
   ]);
 
-  const [driverId, setDriverId] = useState('driver-001');
+  const [driverId, setDriverId] = useState<string>('driver-001');
   const [status, setStatus] = useState<'DRIVING' | 'ON_DUTY' | 'OFF_DUTY' | 'SLEEPER'>('DRIVING');
   const [hoursDrivenToday, setHoursDrivenToday] = useState<number>(isEU ? 8.0 : 8.5);
   const [cycleHoursUsed, setCycleHoursUsed] = useState<number>(isEU ? 36.0 : 45.0);
   
-  const [logs, setLogs] = useState<Array<HosStatusPayload & { violation: boolean; reason?: string; timestamp: string; driverName: string }>>([
+  const [logs, setLogs] = useState<Array<{ driverId: string; driverName: string; status: string; hoursDrivenToday: number; cycleHoursUsed: number; violation: boolean; reason?: string; timestamp: string }>>([
     { driverId: 'driver-001', driverName: 'John Doe (Truck #104)', status: 'DRIVING', hoursDrivenToday: isEU ? 8.0 : 8.5, cycleHoursUsed: isEU ? 36.0 : 45.0, violation: false, timestamp: '10:30 AM' },
     { driverId: 'driver-002', driverName: 'Sarah Jenkins (Truck #208)', status: isEU ? 'DRIVING' : 'ON_DUTY', hoursDrivenToday: isEU ? 10.2 : 11.5, cycleHoursUsed: isEU ? 56.0 : 71.0, violation: true, reason: isEU ? 'Exceeded maximum daily driving limit of 9-10 hours under EC 561/2006 (10.2 hrs logged without qualifying break extension).' : 'Exceeded maximum daily driving limit of 11 hours (11.5 hrs logged).', timestamp: '09:15 AM' }
   ]);
 
-  const handleAddHosLog = async (e: React.FormEvent) => {
+  const handleAddHosLog = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     
     let violation = false;
@@ -35,12 +35,14 @@ export const HosLogsDashboard: React.FC = () => {
         reason = `Exceeded standard EU daily driving limit of 9 hours under Regulation 561/2006 (${hoursDrivenToday} hrs logged).`;
       }
     } else {
-      const evaluation = evaluateHosCompliance({ driverId, status, hoursDrivenToday, cycleHoursUsed });
-      violation = evaluation.violation;
-      reason = evaluation.reason || '';
+      const evaluation = await evaluateHosCompliance(driverId);
+      violation = !evaluation.isCompliant;
+      if (violation) {
+        reason = `Driver ${driverId} evaluated as non-compliant (Remaining hours: ${evaluation.remainingHours}).`;
+      }
     }
 
-    const selectedDriver = drivers.find(d => d.id === driverId)?.name || driverId;
+    const selectedDriver = drivers.find((d) => d.id === driverId)?.name || driverId;
 
     const newLog = {
       driverId,
@@ -87,7 +89,7 @@ export const HosLogsDashboard: React.FC = () => {
               onChange={(e) => setDriverId(e.target.value)}
               style={{ width: '100%', padding: '10px', background: '#1f2937', border: '1px solid #374151', color: '#fff', borderRadius: '6px' }}
             >
-              {drivers.map(d => (
+              {drivers.map((d) => (
                 <option key={d.id} value={d.id}>{d.name}</option>
               ))}
             </select>
@@ -97,7 +99,7 @@ export const HosLogsDashboard: React.FC = () => {
             <label style={{ display: 'block', color: '#9ca3af', fontSize: '12px', marginBottom: '6px' }}>Duty Status</label>
             <select
               value={status}
-              onChange={(e) => setStatus(e.target.value as any)}
+              onChange={(e) => setStatus(e.target.value as 'DRIVING' | 'ON_DUTY' | 'OFF_DUTY' | 'SLEEPER')}
               style={{ width: '100%', padding: '10px', background: '#1f2937', border: '1px solid #374151', color: '#fff', borderRadius: '6px' }}
             >
               <option value="DRIVING">Driving</option>

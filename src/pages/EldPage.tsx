@@ -37,9 +37,29 @@ export function EldPage({ drivers: parentDrivers }: EldPageProps) {
 
   const isEU = currentRegion.includes('EU') || region === 'EU' || region?.includes('EU');
 
-  const [logs, setLogs] = useState<Array<{ id: string; driverName: string; status: string; hours: number; location: string; date: string }>>([
-    { id: '1', driverName: 'John Doe', status: 'DRIVING', hours: 8.5, location: 'Chicago, IL', date: new Date().toISOString() }
+  const [logs, setLogs] = useState<Array<{ id: string; region?: string; driverName: string; status: string; hours: number; location: string; date: string }>>([
+    { id: '1', region: 'US', driverName: 'John Doe', status: 'DRIVING', hours: 8.5, location: 'Chicago, IL', date: new Date().toISOString() }
   ]);
+  const [loadingBackend, setLoadingBackend] = useState<boolean>(false);
+
+  // Fetch compliance logs from Express backend on load
+  useEffect(() => {
+    const fetchLogs = async () => {
+      try {
+        const response = await fetch('http://localhost:3000/api/logs');
+        if (response.ok) {
+          const data = await response.json();
+          if (Array.isArray(data) && data.length > 0) {
+            setLogs(data);
+          }
+        }
+      } catch (err) {
+        console.warn('Backend server not reachable on port 3000, using local fallback state.');
+      }
+    };
+
+    fetchLogs();
+  }, []);
 
   const fallbackDrivers: Array<{ id: string; name: string }> = [
     { id: 'driver-001', name: 'John Doe' },
@@ -54,23 +74,43 @@ export function EldPage({ drivers: parentDrivers }: EldPageProps) {
   const [hours, setHours] = useState('11.0');
   const [location, setLocation] = useState('Chicago, IL');
 
-  const handleAddLog = (e: React.FormEvent) => {
+  const handleAddLog = async (e: React.FormEvent) => {
     e.preventDefault();
     const parsedHours = parseFloat(hours) || 0;
     if (parsedHours <= 0) return;
 
-    const newLog = {
-      id: 'local-' + Date.now(),
-      driverName: driverName || 'John Doe',
-      status,
-      location: location || 'Unknown Location',
-      hours: parsedHours,
-      date: new Date().toISOString()
-    };
+    setLoadingBackend(true);
 
-    setLogs([newLog, ...logs]);
-    setLocation('');
-    setHours('11.0');
+    try {
+      const response = await fetch('http://localhost:3000/api/logs', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          region: isEU ? 'EU' : 'US',
+          driverName: driverName || 'John Doe',
+          status,
+          hours: parsedHours,
+          location: location || 'Unknown Location'
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to save log to backend');
+      }
+
+      setLogs([data, ...logs]);
+      setLocation('');
+      setHours('11.0');
+    } catch (error: any) {
+      console.error('API Error:', error);
+      alert('Could not save to backend server. Ensure Express is running on port 3000.');
+    } finally {
+      setLoadingBackend(false);
+    }
   };
 
   return (
@@ -137,8 +177,12 @@ export function EldPage({ drivers: parentDrivers }: EldPageProps) {
                 <input type="text" placeholder="e.g. St. Louis, MO" value={location} onChange={(e) => setLocation(e.target.value)} required style={{ width: '100%', padding: '10px', background: '#020617', border: '1px solid #1e293b', borderRadius: '6px', color: '#fff', outline: 'none' }} />
               </div>
             </div>
-            <button type="submit" style={{ background: '#6366f1', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>
-              Record ELD Event
+            <button 
+              type="submit" 
+              disabled={loadingBackend}
+              style={{ background: '#6366f1', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', opacity: loadingBackend ? 0.7 : 1 }}
+            >
+              {loadingBackend ? 'Saving to Backend...' : 'Record ELD Event'}
             </button>
           </form>
 
@@ -161,10 +205,10 @@ export function EldPage({ drivers: parentDrivers }: EldPageProps) {
                 <tbody>
                   {logs.map((log) => (
                     <tr key={log.id} style={{ borderBottom: '1px solid #1e293b' }}>
-                      <td style={{ padding: '14px 16px', fontWeight: 'bold' }}>{log.id.slice(0, 8)}...</td>
+                      <td style={{ padding: '14px 16px', fontWeight: 'bold' }}>{String(log.id).slice(0, 8)}...</td>
                       <td style={{ padding: '14px 16px', color: '#fff' }}>{log.driverName}</td>
                       <td style={{ padding: '14px 16px', color: '#38bdf8' }}>{log.status}</td>
-                      <td style={{ padding: '14px 16px', color: log.hours < 3 ? '#ef4444' : '#4ade80', fontWeight: 'bold' }}>{log.hours} hrs</td>
+                      <td style={{ padding: '14px 16px', color: Number(log.hours) < 3 ? '#ef4444' : '#4ade80', fontWeight: 'bold' }}>{log.hours} hrs</td>
                       <td style={{ padding: '14px 16px', color: '#cbd5e1' }}>{log.location}</td>
                       <td style={{ padding: '14px 16px', color: '#94a3b8' }}>{new Date(log.date).toLocaleDateString()}</td>
                     </tr>

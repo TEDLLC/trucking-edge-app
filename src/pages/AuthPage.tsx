@@ -15,15 +15,17 @@ export const AuthPage: React.FC = () => {
     setLoading(true);
     setErrorMsg('');
 
+    const sanitizedEmail = email.trim();
+
     const { error } = isSignUp
       ? await supabase.auth.signUp({
-          email,
+          email: sanitizedEmail,
           password,
           options: {
             data: { region },
           },
         })
-      : await supabase.auth.signInWithPassword({ email, password });
+      : await supabase.auth.signInWithPassword({ email: sanitizedEmail, password });
 
     if (error) {
       setErrorMsg(error.message);
